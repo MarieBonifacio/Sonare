@@ -1,35 +1,30 @@
+import { Note } from 'musicxml-interfaces';
 import React from 'react';
-import { useGLTF } from '@react-three/drei';
+import { Mesh, Color } from 'three';
 
-export default function HarpModel() {
-  // Charge le modèle GLTF
-  const { scene } = useGLTF('/models/harp/Unity2Skfb.gltf');
-
-  return (
-    // Rend le modèle 3D
-    <primitive object={scene} scale={[1, 1, 1]} position={[0, 0, 0]} />
-  );
+interface HarpModelProps {
+  notes: Note[];
 }
 
 
-// const HarpModel = () => {
-//   const normalMap = useLoader(TextureLoader, '/models/textures/10982_MT_Harp_Normal.jpg');
+const HarpModel: React.FC<HarpModelProps> = ({ notes }) => {
+  // Génération de 36 cordes
+  const strings = Array.from({ length: 36 }, (_, index) => (
+    <mesh
+      key={index}
+      name={`String${index}`} // Nom unique pour chaque corde
+      position={[0, index * 0.5 - 8, 0]} // Espacement vertical (axe Y)
+      scale={[0.1, 2, 0.1]} // Dimensions ajustées : épaisses et longues
+    >
+      <cylinderGeometry args={[0.05, 0.05, 2]} /> {/* Diamètre = 0.05, Hauteur = 2 */}
+      <meshStandardMaterial color={`hsl(${index * 10}, 100%, 50%)`} /> {/* Couleur unique */}
+    </mesh>
+  ));
 
-//   const { scene } = useGLTF('/models/Unity2Skfb.gltf');
+  return <group>{strings}</group>;
+};
 
-//   // Applique manuellement la texture au maillage
-//   scene.traverse((child) => {
-//     if ((child as THREE.Mesh).isMesh) {
-//       ((child as THREE.Mesh).material as THREE.MeshStandardMaterial).normalMap = normalMap;
-//     }
-//   });
-
-//   return <primitive object={scene} scale={[2, 2, 2]} />;
-// };
-
-// export default HarpModel;
-
-
+export default HarpModel;
 
 
 
