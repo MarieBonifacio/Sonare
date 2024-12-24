@@ -2,6 +2,7 @@ import React from 'react';
 
 interface HarpModelProps {
   useManualStrings?: boolean;
+  notes: any[];
 }
 
 const HarpStringModel: React.FC<HarpModelProps> = ({ useManualStrings = true }) => {
