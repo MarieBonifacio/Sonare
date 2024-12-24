@@ -9,8 +9,8 @@ function App() {
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <div style={{ flex: 1 }}>
-        <Canvas camera={{ position: [0, 0, 20], fov: 75 }}>
-          <ambientLight intensity={0.5} />
+      <Canvas camera={{ position: [0, 0, 25], fov: 75 }}>
+      <ambientLight intensity={0.5} />
           <directionalLight position={[10, 10, 5]} intensity={1} />
           <pointLight position={[10, 10, 10]} />
           {/* Grille pour repérer la scène */}
