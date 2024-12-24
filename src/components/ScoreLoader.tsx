@@ -12,55 +12,44 @@ const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      console.log('Fichier détecté :', file.name);
-      setFileName(file.name);
-
-      if (file.name.endsWith('.mxl')) {
-        console.log('Traitement d’un fichier .mxl');
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-          try {
-            console.log('Tentative de décompression du fichier .mxl...');
-            const zip = await JSZip.loadAsync(e.target?.result as ArrayBuffer);
-            console.log('Fichiers trouvés dans l’archive .mxl :', Object.keys(zip.files));
-            console.log('Décompression réussie.');
-            const musicXmlFile = Object.keys(zip.files).find((name) => name === 'score.xml');
-
-            if (!musicXmlFile) {
-              console.error('Aucun fichier score.xml trouvé dans l’archive .mxl');
-              return;
-            }
-
-            console.log('Fichier MusicXML trouvé :', musicXmlFile);
-            const xmlContent = await zip.files[musicXmlFile].async('string');
-            if (xmlContent) {
-              parseXmlContent(xmlContent); // Parse le contenu XML extrait
-            } else {
-              console.error('Le contenu XML est vide ou invalide.');
-            }
-          } catch (error) {
-            console.error('Erreur lors de la décompression du fichier .mxl :', error);
-          }
-        };
-        reader.readAsArrayBuffer(file);
-      } else {
-        console.log('Traitement d’un fichier .xml ou .musicxml');
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          console.log('Lecture du fichier XML brut effectuée.');
-          const xmlContent = e.target?.result as string;
-          if (xmlContent) {
-            parseXmlContent(xmlContent);
-          } else {
-            console.error('Le contenu XML est vide ou invalide.');
-          }
-        };
-        reader.readAsText(file);
-      }
-    } else {
+    if (!file) {
       console.warn('Aucun fichier sélectionné.');
+      return;
     }
+
+    console.log('Fichier détecté :', file.name);
+    setFileName(file.name);
+
+    try {
+      const fileContent = await readFile(file);
+      const xmlContent = file.name.endsWith('.mxl') ? await extractMxlContent(fileContent) : new TextDecoder().decode(fileContent);
+      parseXmlContent(xmlContent);
+    } catch (error) {
+      console.error('Erreur lors du traitement du fichier :', error);
+    }
+  };
+
+  const readFile = (file: File): Promise<ArrayBuffer> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  const extractMxlContent = async (fileContent: ArrayBuffer): Promise<string> => {
+    console.log('Tentative de décompression du fichier .mxl...');
+    const zip = await JSZip.loadAsync(fileContent);
+    console.log('Fichiers trouvés dans l’archive .mxl :', Object.keys(zip.files));
+    const musicXmlFile = Object.keys(zip.files).find((name) => name === 'score.xml');
+
+    if (!musicXmlFile) {
+      throw new Error('Aucun fichier score.xml trouvé dans l’archive .mxl');
+    }
+
+    console.log('Fichier MusicXML trouvé :', musicXmlFile);
+    return zip.files[musicXmlFile].async('string');
   };
 
   const parseXmlContent = (xmlContent: string) => {
