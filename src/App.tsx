@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './styles.css';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import HarpModel from './components/HarpModel';
@@ -15,41 +16,46 @@ function App() {
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="container">
       {/* Section pour charger la partition */}
-      <div style={{ padding: '10px', background: '#f5f5f5' }}>
+      <div className="header">
         <ScoreLoader onLoad={handleScoreLoad} />
       </div>
 
-          {/* Section pour afficher les notes extraites */}
-    <div style={{ padding: '10px', background: '#fff', maxHeight: '200px', overflow: 'auto' }}>
-      <h4>Notes extraites :</h4>
-      <ul>
-        {notes.map((note, index) => (
-          <li key={index}>
-            {`Step: ${note.pitch.step}, Octave: ${note.pitch.octave}, Alter: ${note.pitch.alter}, Duration: ${note.duration}`}
-          </li>
-        ))}
-      </ul>
-    </div>
+      <div className="content">
+        {/* Section pour afficher les notes extraites */}
+        <div className="notes-container card">
+          <h4>Notes extraites :</h4>
+          <div className="notes-grid">
+            {notes.map((note, index) => (
+              <div key={index} className="note-card">
+                <p><strong>Step:</strong> {note.pitch.step}</p>
+                <p><strong>Octave:</strong> {note.pitch.octave}</p>
+                <p><strong>Alter:</strong> {note.pitch.alter}</p>
+                <p><strong>Duration:</strong> {note.duration}</p>
+              </div>
+            ))}
+          </div>
+        </div>
 
-      {/* Canvas pour la scène 3D */}
-      <div style={{ flex: 1 }}>
-        <Canvas camera={{ position: [0, 0, 25], fov: 75 }}>
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[10, 10, 5]} intensity={1} />
-          <pointLight position={[10, 10, 10]} />
-          <gridHelper args={[20, 20]} />
+        {/* Section pour afficher le modèle de harpe */}
+        <div className="harp-container">
+          <Canvas camera={{ position: [0, 0, 20], fov: 75 }}>
+            <ambientLight intensity={0.5} />
+            <directionalLight position={[10, 10, 5]} intensity={1} />
+            <pointLight position={[10, 10, 10]} />
+            <HarpModel useManualStrings={true} notes={notes} />
+            <OrbitControls />
+          </Canvas>
+        </div>
+      </div>
 
-          {/* HarpModel affichant les cordes avec les notes */}
-          <HarpModel useManualStrings={true} notes={notes} />
-
-          <OrbitControls />
-        </Canvas>
+      {/* Footer */}
+      <div className="footer">
+        <p>Footer content here</p>
       </div>
     </div>
   );
 }
 
 export default App;
-
