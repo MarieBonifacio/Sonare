@@ -137,6 +137,44 @@ input:focus, textarea:focus {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
+.note-card--active {
+  border-color: #2ecc71;
+  background: #eafaf1;
+  box-shadow: 0 0 0 2px #2ecc71;
+}
+
+.ui-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 20px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 10px;
+}
+
+.ui-controls button {
+  min-width: 120px;
+}
+
+.tempo-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  color: #2c3e50;
+  width: 180px;
+}
+
+.tempo-label input[type='range'] {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+}
+
 .animated {
   animation: fadeIn 1s ease-in-out;
 }
