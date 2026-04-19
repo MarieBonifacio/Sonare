@@ -1,12 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import './styles.css';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import * as Tone from 'tone';
 import { Note } from 'musicxml-interfaces';
 import HarpModel from './components/HarpModel';
 import ScoreLoader from './components/ScoreLoader';
 import UIControls from './components/UIControls';
+
+// Type minimal pour ne pas importer Tone.js au chargement initial
+type PolySynthInstance = {
+  triggerAttackRelease: (note: string, duration: string) => void;
+  dispose: () => void;
+};
 
 function App() {
   // État principal de la partition
@@ -19,7 +24,7 @@ function App() {
   // Refs pour éviter les problèmes de closure dans les timers
   const playbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPlayingRef = useRef(false);
-  const synthRef = useRef<Tone.PolySynth | null>(null);
+  const synthRef = useRef<PolySynthInstance | null>(null);
   const activeNoteRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -37,8 +42,11 @@ function App() {
     });
   }, [activeNoteIndex]);
 
-  const getSynth = (): Tone.PolySynth => {
+  // Chargement paresseux de Tone.js : n'est importé qu'au premier clic sur Lecture
+  const getSynth = async (): Promise<PolySynthInstance> => {
     if (!synthRef.current) {
+      const Tone = await import('tone');
+      await Tone.start();
       synthRef.current = new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: 'triangle' },
         envelope: { attack: 0.02, decay: 0.5, sustain: 0.1, release: 0.8 },
@@ -47,13 +55,14 @@ function App() {
     return synthRef.current;
   };
 
-  const jouerNote = (note: Note) => {
+  const jouerNote = async (note: Note) => {
     if (!note.pitch) return;
     const { step, octave, alter = 0 } = note.pitch;
     const alterSymbol = alter > 0 ? '#' : alter < 0 ? 'b' : '';
     const nomNote = `${step}${alterSymbol}${octave}`;
     try {
-      getSynth().triggerAttackRelease(nomNote, '8n');
+      const synth = await getSynth();
+      synth.triggerAttackRelease(nomNote, '8n');
     } catch {
       // Note hors de la plage du synthétiseur — ignorée silencieusement
     }
@@ -75,9 +84,11 @@ function App() {
       setActiveNoteIndex(index);
       const note = partitionCourante[index];
       jouerNote(note);
-      // Durée réelle = (divisions MusicXML / divisions par noire) * ms par noire
+      // Durée réelle = (duration MusicXML / divisions par noire) * ms par noire
       const msParNoire = 60_000 / bpmCourant;
-      const dureeMs = ((note.duration ?? divisionsCourantes) / divisionsCourantes) * msParNoire;
+      const dureeMs =
+        ((note.duration ?? divisionsCourantes) / divisionsCourantes) *
+        msParNoire;
       playbackTimer.current = setTimeout(
         () =>
           jouerDepuis(
@@ -86,7 +97,7 @@ function App() {
             bpmCourant,
             divisionsCourantes,
           ),
-        Math.max(dureeMs, 50), // minimum 50 ms pour éviter les empilements
+        Math.max(dureeMs, 50),
       );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -94,7 +105,6 @@ function App() {
   );
 
   const handlePlay = useCallback(async () => {
-    await Tone.start();
     isPlayingRef.current = true;
     setIsPlaying(true);
     jouerDepuis(0, notes, tempo, divisions);
@@ -161,7 +171,9 @@ function App() {
             <ambientLight intensity={0.5} />
             <directionalLight position={[10, 10, 5]} intensity={1} />
             <pointLight position={[10, 10, 10]} />
-            <HarpModel notes={notes} activeNoteIndex={activeNoteIndex} />
+            <Suspense fallback={null}>
+              <HarpModel notes={notes} activeNoteIndex={activeNoteIndex} />
+            </Suspense>
             <OrbitControls />
           </Canvas>
         </div>
