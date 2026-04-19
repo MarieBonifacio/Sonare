@@ -227,6 +227,38 @@ input:focus, textarea:focus {
   box-shadow: 0 0 0 2px #2ecc71;
 }
 
+.note-card--correct {
+  border-color: #27ae60;
+  background: #d5f5e3;
+  box-shadow: 0 0 0 3px #27ae60;
+}
+
+.note-card--error {
+  border-color: #e74c3c;
+  background: #fdf0ef;
+  box-shadow: 0 0 0 3px #e74c3c;
+}
+
+.midi-badge {
+  font-size: 13px;
+  padding: 5px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.midi-badge--connected {
+  background: rgba(46, 204, 113, 0.25);
+  color: #eafaf1;
+  border: 1px solid rgba(46, 204, 113, 0.6);
+}
+
+.midi-badge--disconnected {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 .ui-controls {
   display: flex;
   align-items: center;

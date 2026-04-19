@@ -16,6 +16,8 @@ import {
   recordLoad,
   recordPlay,
 } from './utils/history';
+import { useMidi } from './hooks/useMidi';
+import { pitchToMidi } from './utils/midiMapper';
 
 // Type minimal pour ne pas importer Tone.js au chargement initial
 type PolySynthInstance = {
@@ -40,21 +42,39 @@ function App() {
   const [showFingering, setShowFingering] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory());
   const [showHistory, setShowHistory] = useState(false);
+  const [midiResult, setMidiResult] = useState<'correct' | 'error' | null>(
+    null,
+  );
   const currentEntryIdRef = useRef<string | null>(null);
 
   // Refs pour éviter les problèmes de closure dans les timers
   const playbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const midiResultTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPlayingRef = useRef(false);
   const loopRef = useRef(false);
   const synthRef = useRef<PolySynthInstance | null>(null);
   const activeNoteRef = useRef<HTMLDivElement | null>(null);
+  const activeNoteIndexRef = useRef<number | null>(null);
+  const practiceIndexRef = useRef(0);
 
   useEffect(() => {
     return () => {
       synthRef.current?.dispose();
       if (playbackTimer.current) clearTimeout(playbackTimer.current);
+      if (midiResultTimer.current) clearTimeout(midiResultTimer.current);
     };
   }, []);
+
+  // Garde activeNoteIndexRef synchronisé pour usage dans les callbacks stables
+  useEffect(() => {
+    activeNoteIndexRef.current = activeNoteIndex;
+  }, [activeNoteIndex]);
+
+  // Réinitialise le curseur de pratique quand une nouvelle partition est chargée
+  useEffect(() => {
+    practiceIndexRef.current = 0;
+    setMidiResult(null);
+  }, [notes]);
 
   // Scroll automatique vers la note active
   useEffect(() => {
@@ -239,6 +259,65 @@ function App() {
     setHistory([]);
   }, []);
 
+  const showMidiResult = useCallback((result: 'correct' | 'error') => {
+    setMidiResult(result);
+    if (midiResultTimer.current) clearTimeout(midiResultTimer.current);
+    midiResultTimer.current = setTimeout(() => setMidiResult(null), 700);
+  }, []);
+
+  const handleMidiNote = useCallback(
+    (midiNote: number) => {
+      if (notes.length === 0) return;
+
+      // Pendant la lecture automatique : comparer avec la note active
+      if (isPlayingRef.current) {
+        const idx = activeNoteIndexRef.current;
+        if (idx === null) return;
+        const note = notes[idx];
+        if (!note.pitch) return;
+        const expected = pitchToMidi(
+          note.pitch.step ?? '',
+          note.pitch.octave ?? 0,
+          note.pitch.alter ?? 0,
+        );
+        showMidiResult(midiNote === expected ? 'correct' : 'error');
+        return;
+      }
+
+      // Mode pratique manuel : avancer note par note
+      let idx = practiceIndexRef.current;
+      // Sauter les silences et les notes d'accord
+      while (
+        idx < notes.length &&
+        (notes[idx].rest !== undefined || notes[idx].chord !== undefined)
+      ) {
+        idx++;
+      }
+      if (idx >= notes.length) return;
+
+      const note = notes[idx];
+      if (!note.pitch) return;
+      const expected = pitchToMidi(
+        note.pitch.step ?? '',
+        note.pitch.octave ?? 0,
+        note.pitch.alter ?? 0,
+      );
+
+      setActiveNoteIndex(idx);
+      if (midiNote === expected) {
+        showMidiResult('correct');
+        practiceIndexRef.current = idx + 1;
+      } else {
+        showMidiResult('error');
+        practiceIndexRef.current = idx;
+      }
+    },
+    [notes, showMidiResult],
+  );
+
+  const { status: midiStatus, deviceName: midiDeviceName } =
+    useMidi(handleMidiNote);
+
   return (
     <div className='container'>
       <div className='header'>
@@ -253,6 +332,16 @@ function App() {
             >
               📋 Historique
             </button>
+            {midiStatus === 'connected' && (
+              <span className='midi-badge midi-badge--connected'>
+                🎹 {midiDeviceName}
+              </span>
+            )}
+            {midiStatus === 'disconnected' && (
+              <span className='midi-badge midi-badge--disconnected'>
+                🎹 Aucun appareil MIDI
+              </span>
+            )}
           </div>
         </div>
         {showHistory && (
@@ -282,7 +371,7 @@ function App() {
               <div
                 key={index}
                 ref={activeNoteIndex === index ? activeNoteRef : null}
-                className={`note-card${activeNoteIndex === index ? ' note-card--active' : ''}`}
+                className={`note-card${activeNoteIndex === index ? ' note-card--active' : ''}${activeNoteIndex === index && midiResult === 'correct' ? ' note-card--correct' : ''}${activeNoteIndex === index && midiResult === 'error' ? ' note-card--error' : ''}`}
               >
                 {note.rest !== undefined ? (
                   <>
