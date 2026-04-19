@@ -35,7 +35,7 @@ export default tseslint.config(
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
       // Les props Three.js (position, args, intensity…) ne sont pas des props HTML standard
-      'react/no-unknown-property': ['error', { ignore: ['position', 'args', 'intensity', 'attach', 'rotation', 'scale', 'object', 'castShadow', 'receiveShadow'] }],
+      'react/no-unknown-property': ['error', { ignore: ['position', 'args', 'intensity', 'attach', 'rotation', 'scale', 'object', 'castShadow', 'receiveShadow', 'geometry', 'roughness', 'metalness', 'quaternion', 'emissive', 'emissiveIntensity', 'color', 'wireframe', 'transparent', 'opacity', 'side', 'depthWrite', 'map', 'normalMap', 'envMapIntensity'] }],
       'prettier/prettier': 'error',
       ...prettierConfig.rules,
     },
