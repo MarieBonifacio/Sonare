@@ -10,7 +10,9 @@ interface ScoreLoaderProps {
 const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
   const [fileName, setFileName] = useState<string | null>(null);
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file) {
       console.warn('Aucun fichier sélectionné.');
@@ -22,7 +24,9 @@ const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
 
     try {
       const fileContent = await readFile(file);
-      const xmlContent = file.name.endsWith('.mxl') ? await extractMxlContent(fileContent) : new TextDecoder().decode(fileContent);
+      const xmlContent = file.name.endsWith('.mxl')
+        ? await extractMxlContent(fileContent)
+        : new TextDecoder().decode(fileContent);
       parseXmlContent(xmlContent);
     } catch (error) {
       console.error('Erreur lors du traitement du fichier :', error);
@@ -38,11 +42,18 @@ const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
     });
   };
 
-  const extractMxlContent = async (fileContent: ArrayBuffer): Promise<string> => {
+  const extractMxlContent = async (
+    fileContent: ArrayBuffer,
+  ): Promise<string> => {
     console.log('Tentative de décompression du fichier .mxl...');
     const zip = await JSZip.loadAsync(fileContent);
-    console.log('Fichiers trouvés dans l’archive .mxl :', Object.keys(zip.files));
-    const musicXmlFile = Object.keys(zip.files).find((name) => name === 'score.xml');
+    console.log(
+      'Fichiers trouvés dans l’archive .mxl :',
+      Object.keys(zip.files),
+    );
+    const musicXmlFile = Object.keys(zip.files).find(
+      (name) => name === 'score.xml',
+    );
 
     if (!musicXmlFile) {
       throw new Error('Aucun fichier score.xml trouvé dans l’archive .mxl');
@@ -63,11 +74,20 @@ const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
     console.log(`Nombre de notes trouvées : ${noteElements.length}`);
 
     for (let i = 0; i < noteElements.length; i++) {
-      const step = noteElements[i].getElementsByTagName('step')[0]?.textContent || '';
-      const octave = parseInt(noteElements[i].getElementsByTagName('octave')[0]?.textContent || '0', 10);
-      const duration = parseInt(noteElements[i].getElementsByTagName('duration')[0]?.textContent || '0', 10);
+      const step =
+        noteElements[i].getElementsByTagName('step')[0]?.textContent || '';
+      const octave = parseInt(
+        noteElements[i].getElementsByTagName('octave')[0]?.textContent || '0',
+        10,
+      );
+      const duration = parseInt(
+        noteElements[i].getElementsByTagName('duration')[0]?.textContent || '0',
+        10,
+      );
       const alterElement = noteElements[i].getElementsByTagName('alter')[0];
-      const alter = alterElement ? parseInt(alterElement.textContent || '0', 10) : 0;
+      const alter = alterElement
+        ? parseInt(alterElement.textContent || '0', 10)
+        : 0;
 
       console.log(`Note ${i} :`, { step, octave, alter, duration });
 
@@ -84,7 +104,10 @@ const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
           staff: 1,
         } as Note);
       } else {
-        console.warn(`Note ${i} ignorée en raison de données invalides :`, { step, octave });
+        console.warn(`Note ${i} ignorée en raison de données invalides :`, {
+          step,
+          octave,
+        });
       }
     }
 
@@ -93,14 +116,30 @@ const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-      <label htmlFor="fileInput" style={{ cursor: 'pointer', color: 'blue', textDecoration: 'underline' }}>
-        {fileName ? `Chargé : ${fileName}` : 'Cliquez pour charger une partition MusicXML'}
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '10px',
+      }}
+    >
+      <label
+        htmlFor='fileInput'
+        style={{
+          cursor: 'pointer',
+          color: 'blue',
+          textDecoration: 'underline',
+        }}
+      >
+        {fileName
+          ? `Chargé : ${fileName}`
+          : 'Cliquez pour charger une partition MusicXML'}
       </label>
       <input
-        type="file"
-        id="fileInput"
-        accept=".musicxml,.xml,.mxl"
+        type='file'
+        id='fileInput'
+        accept='.musicxml,.xml,.mxl'
         onChange={handleFileUpload}
         style={{ display: 'none' }}
       />
