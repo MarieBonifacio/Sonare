@@ -259,6 +259,84 @@ input:focus, textarea:focus {
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+.exercise-panel {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.exercise-panel__title {
+  color: white;
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.exercise-panel__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.exercise-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exercise-field label {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.exercise-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.btn-option {
+  min-width: auto;
+  padding: 5px 12px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: none;
+}
+
+.btn-option:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: none;
+}
+
+.btn-option--active {
+  background: rgba(46, 204, 113, 0.45);
+  border-color: #2ecc71;
+}
+
+.btn-option--active:hover {
+  background: rgba(46, 204, 113, 0.6);
+}
+
+.btn-generate {
+  background: rgba(46, 204, 113, 0.8);
+  border: 1px solid #2ecc71;
+  box-shadow: none;
+  padding: 8px 20px;
+  font-size: 14px;
+}
+
+.btn-generate:hover {
+  background: #2ecc71;
+  transform: none;
+}
+
 .ui-controls {
   display: flex;
   align-items: center;
