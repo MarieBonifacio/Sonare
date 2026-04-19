@@ -22,6 +22,7 @@ import { useMidi } from './hooks/useMidi';
 import { pitchToMidi } from './utils/midiMapper';
 import ExercisePanel from './components/ExercisePanel';
 import { GeneratedExercise } from './utils/exerciseGenerator';
+import { Lang, T } from './utils/i18n';
 
 // Type minimal pour ne pas importer Tone.js au chargement initial
 type PolySynthInstance = {
@@ -50,6 +51,14 @@ function App() {
   const [midiResult, setMidiResult] = useState<'correct' | 'error' | null>(
     null,
   );
+  const [lang, setLang] = useState<Lang>(() => {
+    const saved = localStorage.getItem('sonare-lang');
+    return saved === 'en' ? 'en' : 'fr';
+  });
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('sonare-theme');
+    return saved === 'light' ? 'light' : 'dark';
+  });
   const currentEntryIdRef = useRef<string | null>(null);
   const practiceCorrectRef = useRef(0);
   const practiceTotalRef = useRef(0);
@@ -63,6 +72,15 @@ function App() {
   const activeNoteRef = useRef<HTMLDivElement | null>(null);
   const activeNoteIndexRef = useRef<number | null>(null);
   const practiceIndexRef = useRef(0);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('sonare-theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('sonare-lang', lang);
+  }, [lang]);
 
   useEffect(() => {
     return () => {
@@ -351,26 +369,28 @@ function App() {
   const { status: midiStatus, deviceName: midiDeviceName } =
     useMidi(handleMidiNote);
 
+  const tr = T[lang];
+
   return (
     <div className='container'>
       <div className='header'>
         <div className='header-top'>
           {title && <h2 className='score-title'>{title}</h2>}
           <div className='header-controls'>
-            <ScoreLoader onLoad={handleScoreLoad} />
+            <ScoreLoader onLoad={handleScoreLoad} lang={lang} />
             <button
               className={`btn-history${showHistory ? ' btn-history--active' : ''}`}
               onClick={() => setShowHistory((h) => !h)}
-              title='Historique des partitions'
+              title={tr.history}
             >
-              📋 Historique
+              📋 {tr.history}
             </button>
             <button
               className={`btn-history${showExercises ? ' btn-history--active' : ''}`}
               onClick={() => setShowExercises((e) => !e)}
-              title='Exercices progressifs'
+              title={tr.exercises}
             >
-              🎯 Exercices
+              🎯 {tr.exercises}
             </button>
             {midiStatus === 'connected' && (
               <span className='midi-badge midi-badge--connected'>
@@ -379,31 +399,49 @@ function App() {
             )}
             {midiStatus === 'disconnected' && (
               <span className='midi-badge midi-badge--disconnected'>
-                🎹 Aucun appareil MIDI
+                🎹 {tr.noMidi}
               </span>
             )}
+            <button
+              className='btn-lang'
+              onClick={() => setLang((l) => (l === 'fr' ? 'en' : 'fr'))}
+              title={tr.otherLang}
+            >
+              {tr.otherLang}
+            </button>
+            <button
+              className='btn-theme'
+              onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+              title={theme === 'dark' ? tr.themeLight : tr.themeDark}
+            >
+              {theme === 'dark' ? '☀' : '◑'}
+            </button>
           </div>
         </div>
         {showHistory && (
-          <HistoryPanel entries={history} onClear={handleClearHistory} />
+          <HistoryPanel
+            entries={history}
+            onClear={handleClearHistory}
+            lang={lang}
+          />
         )}
-        {showExercises && <ExercisePanel onGenerate={handleExerciseGenerate} />}
+        {showExercises && (
+          <ExercisePanel onGenerate={handleExerciseGenerate} lang={lang} />
+        )}
       </div>
 
       <div className='content'>
         {/* Liste des notes extraites */}
         <div className='notes-container card'>
           <div className='notes-header'>
-            <h4>Notes extraites :</h4>
+            <h4>{tr.extractedNotes}</h4>
             {notes.length > 0 && (
               <button
                 className={`btn-fingering${showFingering ? ' btn-fingering--active' : ''}`}
                 onClick={() => setShowFingering((f) => !f)}
-                title={
-                  showFingering ? 'Masquer le doigté' : 'Afficher le doigté'
-                }
+                title={showFingering ? tr.hideFingering : tr.showFingering}
               >
-                ✋ Doigté
+                {tr.fingeringBtn}
               </button>
             )}
           </div>
@@ -417,16 +455,16 @@ function App() {
                 {note.rest !== undefined ? (
                   <>
                     <p>
-                      <strong>Note :</strong> Silence
+                      <strong>{tr.noteLabel} :</strong> {tr.rest}
                     </p>
                     <p>
-                      <strong>Durée :</strong> {note.duration}
+                      <strong>{tr.durationLabel} :</strong> {note.duration}
                     </p>
                   </>
                 ) : (
                   <>
                     <p>
-                      <strong>Note :</strong> {note.pitch?.step}
+                      <strong>{tr.noteLabel} :</strong> {note.pitch?.step}
                       {(note.pitch?.alter ?? 0) > 0
                         ? '♯'
                         : (note.pitch?.alter ?? 0) < 0
@@ -435,11 +473,11 @@ function App() {
                       {note.pitch?.octave}
                     </p>
                     <p>
-                      <strong>Durée :</strong> {note.duration}
+                      <strong>{tr.durationLabel} :</strong> {note.duration}
                     </p>
                     {showFingering && note.pitch && (
                       <p>
-                        <strong>Doigt :</strong>{' '}
+                        <strong>{tr.fingerLabel} :</strong>{' '}
                         {getRecommendedFinger(note.pitch.step ?? '') ?? '?'}
                       </p>
                     )}
@@ -463,6 +501,7 @@ function App() {
             disabled={notes.length === 0}
             currentNoteIndex={activeNoteIndex}
             totalNotes={notes.length}
+            lang={lang}
           />
           {notes.length > 0 && (
             <button
@@ -470,9 +509,9 @@ function App() {
               onClick={() =>
                 downloadMusicXml(notes, divisions, tempo, title || 'partition')
               }
-              title='Télécharger en MusicXML'
+              title={tr.exportXml}
             >
-              ⬇ Exporter MusicXML
+              {tr.exportXml}
             </button>
           )}
           <Canvas camera={{ position: [0, 0, 20], fov: 75 }}>
@@ -488,7 +527,7 @@ function App() {
       </div>
 
       <div className='footer'>
-        <p>Sonare — Visualiseur de partition pour harpe</p>
+        <p>{tr.footer}</p>
       </div>
     </div>
   );
