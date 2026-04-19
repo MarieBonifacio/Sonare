@@ -160,13 +160,40 @@ a:hover {
   color: var(--text-dim);
 }
 
-.notes-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  overflow-y: auto;
+.notes-empty {
+  padding: 24px 16px;
+  color: var(--text-dim);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ─── Score display (VexFlow) ─── */
+.score-display-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
   flex: 1;
-  padding-right: 4px;
+  min-height: 170px;
+  scroll-behavior: smooth;
+  /* Fond clair fixe — la notation musicale traditionnelle est noire sur blanc */
+  background: #f7f9f7;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+[data-theme='light'] .score-display-scroll {
+  background: #ffffff;
+}
+
+.score-display svg {
+  display: block;
+}
+
+/* Scrollbar horizontal discrète */
+.score-display-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+.score-display-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 2px;
 }
 
 /* ─── Note card ─── */

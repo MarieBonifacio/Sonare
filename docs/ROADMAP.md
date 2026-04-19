@@ -94,6 +94,28 @@ Refonte visuelle du rendu 3D pour représenter la harpe renard de Marin Lhopitea
 
 ---
 
+## v3.2 — Rendu de partition ✅ (fait)
+
+- [x] Affichage de la portée musicale avec clé de sol (VexFlow 5)
+- [x] Rendu de toutes les durées : ronde, blanche, noire, croche, double croche
+- [x] Gestion des accords (plusieurs notes sur le même temps)
+- [x] Silences représentés sur la portée
+- [x] Accidentels (dièse / bémol) affichés automatiquement
+- [x] Doigtés annotés sur la portée (mode doigté activé)
+- [x] Note active surlignée en vert (retour MIDI : vert correct / rouge erreur)
+- [x] Défilement horizontal automatique vers la mesure active
+
+---
+
+## v3.3 — Échantillons de harpe réels ✅ (fait)
+
+- [x] Tone.js Sampler chargé en arrière-plan au premier clic Lecture
+- [x] Échantillons harpe orchestrale depuis CDN libre (MusyngKite / midi-js-soundfonts)
+- [x] Fallback transparent vers PluckSynth (Karplus-Strong) si réseau indisponible
+- [x] Transition automatique vers les vrais samples une fois chargés
+
+---
+
 ## Non-objectifs
 
 - Pas de lecture de fichiers audio (MP3, WAV) — Sonare lit des partitions, pas des enregistrements
