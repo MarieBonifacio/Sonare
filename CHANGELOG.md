@@ -26,6 +26,7 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 - Dynamiques MusicXML (`<dynamics><f/>`, `<sound dynamics="X">`) appliquées comme vélocité Tone.js
 - Mode doigté : bouton ✋ Doigté dans le panneau des notes, affiche le doigt recommandé (1–4) par note
 - `getRecommendedFinger(step)` dans `noteMapper.ts` (C/F=1, D/G=2, E/A=3, B=4)
+- Synthèse Karplus-Strong via `PluckSynth` (pool de 8 instances) : son de corde pincée bien plus réaliste qu'un oscillateur triangle
 - Historique des partitions : persisté dans localStorage (max 20 entrées), panneau déroulant dans l'en-tête
 - `history.ts` — `recordLoad`, `recordPlay`, `clearHistory`, `loadHistory` avec upsert par filename
 - `HistoryPanel.tsx` — liste les partitions récentes avec date et compteur de lectures

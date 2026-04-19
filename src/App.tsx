@@ -69,15 +69,22 @@ function App() {
     if (!synthRef.current) {
       const Tone = await import('tone');
       await Tone.start();
-      const s = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: 'triangle' },
-        envelope: { attack: 0.02, decay: 0.5, sustain: 0.1, release: 0.8 },
-      }).toDestination();
-      // Enveloppe dans notre type minimal pour isoler l'API Tone.js
+      // Pool de 8 PluckSynth (Karplus-Strong) pour la polyphonie
+      const pool = Array.from({ length: 8 }, () =>
+        new Tone.PluckSynth({
+          attackNoise: 1,
+          dampening: 4000,
+          resonance: 0.98,
+        }).toDestination(),
+      );
+      let poolIndex = 0;
       synthRef.current = {
-        triggerAttackRelease: (note, duration, velocity) =>
-          s.triggerAttackRelease(note, duration, undefined, velocity),
-        dispose: () => s.dispose(),
+        triggerAttackRelease: (note, _duration, velocity) => {
+          const synth = pool[poolIndex];
+          poolIndex = (poolIndex + 1) % pool.length;
+          synth.triggerAttackRelease(note, '8n', undefined, velocity);
+        },
+        dispose: () => pool.forEach((s) => s.dispose()),
       };
     }
     return synthRef.current!;

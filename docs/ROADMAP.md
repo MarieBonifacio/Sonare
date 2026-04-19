@@ -42,7 +42,7 @@
 
 ## v1.2 — Pédagogie ✅ (fait)
 
-- [ ] Remplacer la synthèse triangle par des échantillons WAV réels de corde de harpe
+- [x] Remplacer la synthèse triangle par une synthèse Karplus-Strong (PluckSynth, corde pincée réaliste)
 - [x] Supporter les dynamiques (p, f, mf…) — ajuster le volume par mesure
 - [x] Mode "doigté" : afficher le doigt recommandé par corde (1–5)
 - [ ] Détection des erreurs si connecté à un clavier MIDI
