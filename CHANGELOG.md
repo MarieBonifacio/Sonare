@@ -23,11 +23,16 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 - Bouton ↺ Boucle pour rejouer la partition en boucle
 - Silences affichés "Silence" dans la liste des notes
 
+- Dynamiques MusicXML (`<dynamics><f/>`, `<sound dynamics="X">`) appliquées comme vélocité Tone.js
+- Mode doigté : bouton ✋ Doigté dans le panneau des notes, affiche le doigt recommandé (1–4) par note
+- `getRecommendedFinger(step)` dans `noteMapper.ts` (C/F=1, D/G=2, E/A=3, B=4)
+
 ### Modifié
 - Tone.js chargé en import dynamique (`import('tone')`) — réduit le bundle initial
 - `<HarpModel>` enveloppé dans `<Suspense>` pour le chargement asynchrone du GLTF
 - Cordes : longueurs inversées (graves = plus longues, conformément à une vraie harpe)
-- Tests : 51 tests (dont 17 nouveaux pour rest/chord/tie/tempo/titre/boucle/progression)
+- `getSynth()` encapsule le `PolySynth` dans un type minimal — isole l'API Tone.js
+- Tests : 60 tests (dont 9 nouveaux pour dynamiques/volumes et doigté)
 
 ---
 

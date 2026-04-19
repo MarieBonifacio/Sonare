@@ -6,10 +6,16 @@ import { Note } from 'musicxml-interfaces';
 import HarpModel from './components/HarpModel';
 import ScoreLoader from './components/ScoreLoader';
 import UIControls from './components/UIControls';
+import { getRecommendedFinger } from './utils/noteMapper';
+import { DEFAULT_VOLUME } from './utils/xmlParser';
 
 // Type minimal pour ne pas importer Tone.js au chargement initial
 type PolySynthInstance = {
-  triggerAttackRelease: (note: string, duration: string) => void;
+  triggerAttackRelease: (
+    note: string,
+    duration: string,
+    velocity?: number,
+  ) => void;
   dispose: () => void;
 };
 
@@ -17,11 +23,13 @@ function App() {
   // État principal de la partition
   const [notes, setNotes] = useState<Note[]>([]);
   const [divisions, setDivisions] = useState(1);
+  const [volumes, setVolumes] = useState<number[]>([]);
   const [activeNoteIndex, setActiveNoteIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
   const [tempo, setBpm] = useState(120);
   const [title, setTitle] = useState('');
+  const [showFingering, setShowFingering] = useState(false);
 
   // Refs pour éviter les problèmes de closure dans les timers
   const playbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -50,22 +58,28 @@ function App() {
     if (!synthRef.current) {
       const Tone = await import('tone');
       await Tone.start();
-      synthRef.current = new Tone.PolySynth(Tone.Synth, {
+      const s = new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: 'triangle' },
         envelope: { attack: 0.02, decay: 0.5, sustain: 0.1, release: 0.8 },
       }).toDestination();
+      // Enveloppe dans notre type minimal pour isoler l'API Tone.js
+      synthRef.current = {
+        triggerAttackRelease: (note, duration, velocity) =>
+          s.triggerAttackRelease(note, duration, undefined, velocity),
+        dispose: () => s.dispose(),
+      };
     }
-    return synthRef.current;
+    return synthRef.current!;
   };
 
-  const jouerNote = async (note: Note) => {
+  const jouerNote = async (note: Note, volume = DEFAULT_VOLUME) => {
     if (!note.pitch) return;
     const { step, octave, alter = 0 } = note.pitch;
     const alterSymbol = alter > 0 ? '#' : alter < 0 ? 'b' : '';
     const nomNote = `${step}${alterSymbol}${octave}`;
     try {
       const synth = await getSynth();
-      synth.triggerAttackRelease(nomNote, '8n');
+      synth.triggerAttackRelease(nomNote, '8n', volume);
     } catch {
       // Note hors de la plage du synthétiseur — ignorée silencieusement
     }
@@ -77,6 +91,7 @@ function App() {
       partitionCourante: Note[],
       bpmCourant: number,
       divisionsCourantes: number,
+      volumesCourants: number[],
     ) => {
       if (!isPlayingRef.current) {
         setIsPlaying(false);
@@ -89,7 +104,13 @@ function App() {
           // Boucle : reprendre depuis le début après une courte pause
           playbackTimer.current = setTimeout(
             () =>
-              jouerDepuis(0, partitionCourante, bpmCourant, divisionsCourantes),
+              jouerDepuis(
+                0,
+                partitionCourante,
+                bpmCourant,
+                divisionsCourantes,
+                volumesCourants,
+              ),
             50,
           );
           return;
@@ -101,12 +122,13 @@ function App() {
       }
 
       const note = partitionCourante[index];
+      const vol = volumesCourants[index] ?? DEFAULT_VOLUME;
 
       // Note d'accord : jouer immédiatement sans mettre à jour l'index affiché
       if (note.chord !== undefined) {
         // StartStop.Stop = 1 (sans import de l'enum pour éviter XSLTProcessor en test)
         const isTiedStop = note.ties?.some((t) => (t.type as number) === 1);
-        if (!isTiedStop) jouerNote(note);
+        if (!isTiedStop) jouerNote(note, vol);
         playbackTimer.current = setTimeout(
           () =>
             jouerDepuis(
@@ -114,6 +136,7 @@ function App() {
               partitionCourante,
               bpmCourant,
               divisionsCourantes,
+              volumesCourants,
             ),
           0,
         );
@@ -122,10 +145,9 @@ function App() {
 
       setActiveNoteIndex(index);
 
-      // Silence ou note liée (tie stop) : avancer le timer sans re-attaque
       const isTiedStop = note.ties?.some((t) => (t.type as number) === 1);
       if (note.rest === undefined && !isTiedStop) {
-        jouerNote(note);
+        jouerNote(note, vol);
       }
 
       // Durée réelle = (duration MusicXML / divisions par noire) * ms par noire
@@ -140,6 +162,7 @@ function App() {
             partitionCourante,
             bpmCourant,
             divisionsCourantes,
+            volumesCourants,
           ),
         Math.max(dureeMs, 50),
       );
@@ -151,8 +174,8 @@ function App() {
   const handlePlay = useCallback(async () => {
     isPlayingRef.current = true;
     setIsPlaying(true);
-    jouerDepuis(0, notes, tempo, divisions);
-  }, [notes, tempo, divisions, jouerDepuis]);
+    jouerDepuis(0, notes, tempo, divisions, volumes);
+  }, [notes, tempo, divisions, volumes, jouerDepuis]);
 
   const handleStop = useCallback(() => {
     isPlayingRef.current = false;
@@ -173,10 +196,12 @@ function App() {
     loadedDivisions: number,
     loadedTempo?: number,
     loadedTitle?: string,
+    loadedVolumes?: number[],
   ) => {
     handleStop();
     setNotes(loadedNotes);
     setDivisions(loadedDivisions);
+    setVolumes(loadedVolumes ?? []);
     if (loadedTempo !== undefined) setBpm(Math.round(loadedTempo));
     setTitle(loadedTitle ?? '');
   };
@@ -191,7 +216,20 @@ function App() {
       <div className='content'>
         {/* Liste des notes extraites */}
         <div className='notes-container card'>
-          <h4>Notes extraites :</h4>
+          <div className='notes-header'>
+            <h4>Notes extraites :</h4>
+            {notes.length > 0 && (
+              <button
+                className={`btn-fingering${showFingering ? ' btn-fingering--active' : ''}`}
+                onClick={() => setShowFingering((f) => !f)}
+                title={
+                  showFingering ? 'Masquer le doigté' : 'Afficher le doigté'
+                }
+              >
+                ✋ Doigté
+              </button>
+            )}
+          </div>
           <div className='notes-grid'>
             {notes.map((note, index) => (
               <div
@@ -222,6 +260,12 @@ function App() {
                     <p>
                       <strong>Durée :</strong> {note.duration}
                     </p>
+                    {showFingering && note.pitch && (
+                      <p>
+                        <strong>Doigt :</strong>{' '}
+                        {getRecommendedFinger(note.pitch.step ?? '') ?? '?'}
+                      </p>
+                    )}
                   </>
                 )}
               </div>
