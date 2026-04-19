@@ -514,3 +514,20 @@ input:focus, textarea:focus {
     opacity: 1;
   }
 }
+
+.btn-export {
+  display: block;
+  margin: 8px auto 0;
+  padding: 6px 16px;
+  background: #ecf0f1;
+  border: 1px solid #bdc3c7;
+  border-radius: 6px;
+  color: #2c3e50;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.btn-export:hover {
+  background: #d5dbdb;
+}
