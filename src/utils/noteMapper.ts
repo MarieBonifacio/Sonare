@@ -28,3 +28,22 @@ export const mapPitchToString = (pitch: Pitch): number => {
     LOWEST_STRING_FORMULA_INDEX;
   return stringIndex < 0 || stringIndex >= STRING_COUNT ? -1 : stringIndex;
 };
+
+// Doigté standard pour harpe : pouce (1) sur C et F, index (2) sur D et G,
+// majeur (3) sur E et A, annulaire (4) sur B
+const FINGER_MAP: Record<string, number> = {
+  C: 1,
+  D: 2,
+  E: 3,
+  F: 1,
+  G: 2,
+  A: 3,
+  B: 4,
+};
+
+/**
+ * Retourne le doigt recommandé (1–4) pour un step de note donné.
+ * Retourne null si le step est inconnu.
+ */
+export const getRecommendedFinger = (step: string): number | null =>
+  FINGER_MAP[step] ?? null;

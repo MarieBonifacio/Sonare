@@ -23,11 +23,23 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 - Bouton ↺ Boucle pour rejouer la partition en boucle
 - Silences affichés "Silence" dans la liste des notes
 
+- Dynamiques MusicXML (`<dynamics><f/>`, `<sound dynamics="X">`) appliquées comme vélocité Tone.js
+- Mode doigté : bouton ✋ Doigté dans le panneau des notes, affiche le doigt recommandé (1–4) par note
+- `getRecommendedFinger(step)` dans `noteMapper.ts` (C/F=1, D/G=2, E/A=3, B=4)
+- Détection MIDI (WebMIDI API) : badge de connexion dans l'en-tête, mode pratique (avance note par note avec feedback correct/erreur), détection d'erreurs pendant la lecture automatique
+- `useMidi` hook React + `pitchToMidi` dans `midiMapper.ts` (9 tests)
+- Synthèse Karplus-Strong via `PluckSynth` (pool de 8 instances) : son de corde pincée bien plus réaliste qu'un oscillateur triangle
+- Historique des partitions : persisté dans localStorage (max 20 entrées), panneau déroulant dans l'en-tête
+- `history.ts` — `recordLoad`, `recordPlay`, `clearHistory`, `loadHistory` avec upsert par filename
+- `HistoryPanel.tsx` — liste les partitions récentes avec date et compteur de lectures
+- 11 tests Vitest pour `history.ts` (upsert, limite, JSON corrompu, playCount)
+
 ### Modifié
 - Tone.js chargé en import dynamique (`import('tone')`) — réduit le bundle initial
 - `<HarpModel>` enveloppé dans `<Suspense>` pour le chargement asynchrone du GLTF
 - Cordes : longueurs inversées (graves = plus longues, conformément à une vraie harpe)
-- Tests : 51 tests (dont 17 nouveaux pour rest/chord/tie/tempo/titre/boucle/progression)
+- `getSynth()` encapsule le `PolySynth` dans un type minimal — isole l'API Tone.js
+- Tests : 71 tests (dont 11 nouveaux pour l'historique)
 
 ---
 

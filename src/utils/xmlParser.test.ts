@@ -232,4 +232,37 @@ describe('parseXmlToNotes', () => {
     const { title } = parseXmlToNotes(simpleScore(1, xmlNote('C', 4, 1)));
     expect(title).toBeUndefined();
   });
+
+  // ─── Dynamiques / volumes ─────────────────────────────────────────────────────
+
+  it('retourne volumes[] de la même longueur que notes[]', () => {
+    const { notes, volumes } = parseXmlToNotes(
+      simpleScore(1, xmlNote('C', 4, 1), xmlNote('D', 4, 1)),
+    );
+    expect(volumes).toHaveLength(notes.length);
+  });
+
+  it('retourne le volume par défaut (0.65) en absence de dynamique', () => {
+    const { volumes } = parseXmlToNotes(simpleScore(1, xmlNote('C', 4, 1)));
+    expect(volumes[0]).toBeCloseTo(0.65);
+  });
+
+  it('applique le volume correspondant à <dynamics><f/>', () => {
+    const direction =
+      '<direction><direction-type><dynamics><f/></dynamics></direction-type></direction>';
+    const { volumes } = parseXmlToNotes(
+      simpleScore(1, direction, xmlNote('C', 4, 1)),
+    );
+    expect(volumes[0]).toBeCloseTo(0.8);
+  });
+
+  it('met à jour le volume en cours de partition', () => {
+    const dynP =
+      '<direction><direction-type><dynamics><p/></dynamics></direction-type></direction>';
+    const { volumes } = parseXmlToNotes(
+      simpleScore(1, xmlNote('C', 4, 1), dynP, xmlNote('D', 4, 1)),
+    );
+    expect(volumes[0]).toBeCloseTo(0.65); // avant la dynamique
+    expect(volumes[1]).toBeCloseTo(0.3); // après <p>
+  });
 });

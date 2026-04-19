@@ -8,6 +8,8 @@ interface ScoreLoaderProps {
     divisions: number,
     tempo?: number,
     title?: string,
+    volumes?: number[],
+    filename?: string,
   ) => void;
 }
 
@@ -41,7 +43,8 @@ const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
         ? await extractMxlContent(buffer)
         : new TextDecoder().decode(buffer);
 
-      const { notes, divisions, tempo, title } = parseXmlToNotes(xmlContent);
+      const { notes, divisions, tempo, title, volumes } =
+        parseXmlToNotes(xmlContent);
 
       if (notes.length === 0) {
         setErreur(
@@ -50,7 +53,7 @@ const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
         return;
       }
 
-      onLoad(notes, divisions, tempo, title);
+      onLoad(notes, divisions, tempo, title, volumes, file.name);
     } catch (err) {
       const message =
         err instanceof Error
