@@ -52,11 +52,45 @@
 
 ## v2.0 — Fonctionnalités avancées
 
-- [ ] Génération d'exercices progressifs (intégration LLM optionnelle)
+- [x] Exercices progressifs : gammes, arpèges, tierces — 6 tonalités, 3 niveaux, aller-retour
 - [ ] Synchronisation MIDI temps réel (WebMIDI API)
 - [ ] Export de partitions simplifiées (MusicXML ou PDF)
 - [ ] Sauvegarde de la progression (localStorage ou backend optionnel)
 - [ ] Support multilingue (FR / EN)
+
+---
+
+## v2.1 — Modèle 3D fidèle 🦊 (en cours)
+
+Refonte visuelle du rendu 3D pour représenter la harpe renard de Marin Lhopiteau
+([`@october.moth`](https://www.instagram.com/october.moth/), luthier).
+
+### Forme générale
+- [ ] Colonne (pilier) : profil organique en bois clair, section ovale effilée vers le bas
+- [ ] Table d'harmonie : face triangulaire inclinée, grain bois visible en texture
+- [ ] Console (cou) : courbe prononcée partant de la table, montant vers la tête
+
+### Tête sculptée — renard
+- [ ] Tête de renard en bout de console : museau allongé, oreilles pointues, yeux gravés
+- [ ] Pattes avant repliées sous le menton (détail caractéristique du modèle)
+- [ ] Matériau bois chaud (teinte chêne/cerisier clair, `#C68642` environ)
+
+### Cordes
+- [ ] 34 cordes (harpe celtique / folk, contre 47 pour la harpe de concert actuelle)
+- [ ] Cordes fines argentées (cylindres à très faible rayon, matériau métallique)
+- [ ] Chevilles apparentes en haut de la console (petites sphères ou cylindres courts)
+
+### Technique
+- [ ] Modélisation procédurale Three.js (pas de GLTF externe) ou import d'un `.glb` custom
+- [ ] Matériau `MeshStandardMaterial` avec roughness/metalness pour le bois et le métal
+- [ ] Éclairage chaleureux pour valoriser les teintes bois (warm point light)
+- [ ] Garder l'`OrbitControls` existant pour la rotation libre
+
+---
+
+## v3.0 — Fonctionnalités avancées (suite)
+
+- [ ] Génération d'exercices avec intégration LLM optionnelle
 
 ---
 
