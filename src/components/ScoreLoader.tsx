@@ -9,6 +9,7 @@ interface ScoreLoaderProps {
     tempo?: number,
     title?: string,
     volumes?: number[],
+    filename?: string,
   ) => void;
 }
 
@@ -52,7 +53,7 @@ const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
         return;
       }
 
-      onLoad(notes, divisions, tempo, title, volumes);
+      onLoad(notes, divisions, tempo, title, volumes, file.name);
     } catch (err) {
       const message =
         err instanceof Error

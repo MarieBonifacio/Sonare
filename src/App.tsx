@@ -8,6 +8,14 @@ import ScoreLoader from './components/ScoreLoader';
 import UIControls from './components/UIControls';
 import { getRecommendedFinger } from './utils/noteMapper';
 import { DEFAULT_VOLUME } from './utils/xmlParser';
+import HistoryPanel from './components/HistoryPanel';
+import {
+  HistoryEntry,
+  clearHistory,
+  loadHistory,
+  recordLoad,
+  recordPlay,
+} from './utils/history';
 
 // Type minimal pour ne pas importer Tone.js au chargement initial
 type PolySynthInstance = {
@@ -30,6 +38,9 @@ function App() {
   const [tempo, setBpm] = useState(120);
   const [title, setTitle] = useState('');
   const [showFingering, setShowFingering] = useState(false);
+  const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory());
+  const [showHistory, setShowHistory] = useState(false);
+  const currentEntryIdRef = useRef<string | null>(null);
 
   // Refs pour éviter les problèmes de closure dans les timers
   const playbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -174,6 +185,9 @@ function App() {
   const handlePlay = useCallback(async () => {
     isPlayingRef.current = true;
     setIsPlaying(true);
+    if (currentEntryIdRef.current) {
+      setHistory(recordPlay(currentEntryIdRef.current));
+    }
     jouerDepuis(0, notes, tempo, divisions, volumes);
   }, [notes, tempo, divisions, volumes, jouerDepuis]);
 
@@ -197,6 +211,7 @@ function App() {
     loadedTempo?: number,
     loadedTitle?: string,
     loadedVolumes?: number[],
+    filename?: string,
   ) => {
     handleStop();
     setNotes(loadedNotes);
@@ -204,13 +219,38 @@ function App() {
     setVolumes(loadedVolumes ?? []);
     if (loadedTempo !== undefined) setBpm(Math.round(loadedTempo));
     setTitle(loadedTitle ?? '');
+    if (filename) {
+      const updated = recordLoad(loadedTitle ?? filename, filename);
+      setHistory(updated);
+      currentEntryIdRef.current =
+        updated.find((e) => e.filename === filename)?.id ?? null;
+    }
   };
+
+  const handleClearHistory = useCallback(() => {
+    clearHistory();
+    setHistory([]);
+  }, []);
 
   return (
     <div className='container'>
       <div className='header'>
-        {title && <h2 className='score-title'>{title}</h2>}
-        <ScoreLoader onLoad={handleScoreLoad} />
+        <div className='header-top'>
+          {title && <h2 className='score-title'>{title}</h2>}
+          <div className='header-controls'>
+            <ScoreLoader onLoad={handleScoreLoad} />
+            <button
+              className={`btn-history${showHistory ? ' btn-history--active' : ''}`}
+              onClick={() => setShowHistory((h) => !h)}
+              title='Historique des partitions'
+            >
+              📋 Historique
+            </button>
+          </div>
+        </div>
+        {showHistory && (
+          <HistoryPanel entries={history} onClear={handleClearHistory} />
+        )}
       </div>
 
       <div className='content'>
