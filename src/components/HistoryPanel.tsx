@@ -8,8 +8,8 @@ interface HistoryPanelProps {
   lang: Lang;
 }
 
-const formatDate = (iso: string): string =>
-  new Date(iso).toLocaleDateString('fr-FR', {
+const formatDate = (iso: string, lang: Lang): string =>
+  new Date(iso).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -18,7 +18,9 @@ const formatDate = (iso: string): string =>
 function bestScore(entry: HistoryEntry): string | null {
   const sessions = entry.practiceSessions;
   if (!sessions || sessions.length === 0) return null;
-  const best = Math.max(...sessions.map((s) => s.correct / s.total));
+  const valid = sessions.filter((s) => s.total > 0);
+  if (valid.length === 0) return null;
+  const best = Math.max(...valid.map((s) => s.correct / s.total));
   return `${Math.round(best * 100)} %`;
 }
 
@@ -55,7 +57,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({
             <li key={entry.id} className='history-entry'>
               <span className='history-entry__title'>{entry.title}</span>
               <span className='history-entry__meta'>
-                {formatDate(entry.loadedAt)}
+                {formatDate(entry.loadedAt, lang)}
                 {entry.playCount > 0 && ` · ${entry.playCount} ${playWord}`}
                 {practiced > 0 && ` · ${practiced} ${tr.notesPracticed}`}
                 {score && ` · ${tr.bestScore} : ${score}`}
