@@ -168,6 +168,27 @@ describe('parseXmlToNotes', () => {
     expect(notes[1].pitch?.step).toBe('E');
   });
 
+  // ─── Liaisons ────────────────────────────────────────────────────────────────
+
+  it('marque une note avec ties quand <tie type="stop"/> est présent', () => {
+    const xml = simpleScore(
+      1,
+      `<note>
+        <pitch><step>C</step><octave>4</octave></pitch>
+        <duration>1</duration>
+        <tie type="stop"/>
+      </note>`,
+    );
+    const { notes } = parseXmlToNotes(xml);
+    expect(notes[0].ties).toBeDefined();
+    expect(notes[0].ties![0].type).toBe(1); // StartStop.Stop = 1
+  });
+
+  it("ne marque pas ties sur une note normale (sans <tie type='stop'/>)", () => {
+    const { notes } = parseXmlToNotes(simpleScore(1, xmlNote('C', 4, 1)));
+    expect(notes[0].ties).toBeUndefined();
+  });
+
   // ─── Tempo ───────────────────────────────────────────────────────────────────
 
   it('extrait le tempo depuis <sound tempo="X">', () => {

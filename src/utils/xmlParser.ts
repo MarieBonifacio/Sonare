@@ -91,6 +91,16 @@ export const parseXmlToNotes = (xmlContent: string): ParseResult => {
     // Accord : présence de <chord/>
     const isChord = noteEl.getElementsByTagName('chord').length > 0;
 
+    // Liaison finale : présence de <tie type="stop"/> (sans re-attaque)
+    const tieElements = noteEl.getElementsByTagName('tie');
+    let isTiedStop = false;
+    for (let j = 0; j < tieElements.length; j++) {
+      if (tieElements[j].getAttribute('type') === 'stop') {
+        isTiedStop = true;
+        break;
+      }
+    }
+
     if (step && !isNaN(octave)) {
       notes.push({
         pitch: { step, octave, alter },
@@ -99,6 +109,8 @@ export const parseXmlToNotes = (xmlContent: string): ParseResult => {
         type: '',
         staff: 1,
         ...(isChord ? { chord: {} } : {}),
+        // StartStop.Stop = 1 (enum musicxml-interfaces — pas importé pour éviter XSLTProcessor en test)
+        ...(isTiedStop ? { ties: [{ type: 1 }] } : {}),
       } as Note);
     }
   }

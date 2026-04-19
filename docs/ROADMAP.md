@@ -18,31 +18,32 @@
 
 ---
 
-## v1.1 — Qualité et précision (next)
+## v1.1 — Qualité et précision ✅ (fait)
 
 ### Mapping des cordes
-- [ ] Passer à 47 cordes (harpe de concert : C1–G7)
-- [ ] Recalibrer la formule note→corde sur la vraie gamme d'une harpe pédagogique
+- [x] Passer à 47 cordes (harpe de concert : C1–G7)
+- [x] Recalibrer la formule note→corde (offset C1=0, G7=46)
 
 ### Audio
-- [ ] Remplacer la synthèse triangle par des échantillons WAV réels de corde de harpe
-- [ ] Gérer les silences (notes `<rest>` dans le MusicXML)
-- [ ] Polyphonie : jouer les accords simultanément
+- [x] Gérer les silences (notes `<rest>` dans le MusicXML)
+- [x] Polyphonie : jouer les accords simultanément (`<chord/>`)
+- [x] Liaisons (tied notes) : ne pas re-attaquer la note tenue
 
 ### Parsing MusicXML
-- [ ] Supporter les liaisons (tied notes)
-- [ ] Supporter les dynamiques (p, f, mf…)
-- [ ] Lire le tempo directement depuis le fichier (`<sound tempo="120">`)
+- [x] Supporter les liaisons (`<tie type="stop"/>`)
+- [x] Lire le tempo directement depuis le fichier (`<sound tempo="120">`)
 
 ### UI / UX
-- [ ] Affichage du titre de la partition (depuis `<movement-title>` ou `<work-title>`)
-- [ ] Indicateur de progression (barre de lecture)
-- [ ] Boucle sur une section (mode répétition)
+- [x] Affichage du titre de la partition (`<movement-title>` ou `<work-title>`)
+- [x] Indicateur de progression (barre de lecture)
+- [x] Boucle sur une section (bouton ↺ Boucle)
 
 ---
 
-## v1.2 — Pédagogie
+## v1.2 — Pédagogie (next)
 
+- [ ] Remplacer la synthèse triangle par des échantillons WAV réels de corde de harpe
+- [ ] Supporter les dynamiques (p, f, mf…) — ajuster le volume par mesure
 - [ ] Mode "doigté" : afficher le doigt recommandé par corde (1–5)
 - [ ] Détection des erreurs si connecté à un clavier MIDI
 - [ ] Historique : tracker les morceaux joués et le temps de pratique

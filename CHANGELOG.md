@@ -13,10 +13,21 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 - `docs/ARCHITECTURE.md` — description du flux de données et des modules
 - `docs/ROADMAP.md` — plan de développement par version
 - `CHANGELOG.md` (ce fichier)
+- 47 cordes (C1–G7) avec formule recalibrée (offset C1=0, G7=46)
+- Gestion des silences (`<rest/>`) dans le parser et la lecture
+- Accords (`<chord/>`) joués simultanément sans avancer l'index
+- Liaisons (`<tie type="stop"/>`) : pas de re-attaque sur la note tenue
+- Tempo extrait de `<sound tempo="X">` — remplace le 120 BPM par défaut
+- Titre de la partition depuis `<movement-title>` ou `<work-title>`
+- Barre de progression (aria-progressbar) dans UIControls
+- Bouton ↺ Boucle pour rejouer la partition en boucle
+- Silences affichés "Silence" dans la liste des notes
 
 ### Modifié
 - Tone.js chargé en import dynamique (`import('tone')`) — réduit le bundle initial
 - `<HarpModel>` enveloppé dans `<Suspense>` pour le chargement asynchrone du GLTF
+- Cordes : longueurs inversées (graves = plus longues, conformément à une vraie harpe)
+- Tests : 51 tests (dont 17 nouveaux pour rest/chord/tie/tempo/titre/boucle/progression)
 
 ---
 

@@ -2,9 +2,11 @@ import React from 'react';
 
 interface UIControlsProps {
   isPlaying: boolean;
+  isLooping: boolean;
   tempo: number;
   onPlay: () => void;
   onStop: () => void;
+  onLoopToggle: () => void;
   onTempoChange: (bpm: number) => void;
   disabled: boolean;
   currentNoteIndex: number | null;
@@ -13,9 +15,11 @@ interface UIControlsProps {
 
 const UIControls: React.FC<UIControlsProps> = ({
   isPlaying,
+  isLooping,
   tempo,
   onPlay,
   onStop,
+  onLoopToggle,
   onTempoChange,
   disabled,
   currentNoteIndex,
@@ -28,6 +32,14 @@ const UIControls: React.FC<UIControlsProps> = ({
     <div className='ui-controls'>
       <button onClick={isPlaying ? onStop : onPlay} disabled={disabled}>
         {isPlaying ? '⏹ Arrêter' : '▶ Lecture'}
+      </button>
+      <button
+        onClick={onLoopToggle}
+        disabled={disabled}
+        className={`btn-loop${isLooping ? ' btn-loop--active' : ''}`}
+        title={isLooping ? 'Désactiver la boucle' : 'Activer la boucle'}
+      >
+        ↺ Boucle
       </button>
       <label className='tempo-label'>
         <span>Tempo : {tempo} BPM</span>

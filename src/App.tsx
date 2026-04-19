@@ -19,12 +19,14 @@ function App() {
   const [divisions, setDivisions] = useState(1);
   const [activeNoteIndex, setActiveNoteIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isLooping, setIsLooping] = useState(false);
   const [tempo, setBpm] = useState(120);
   const [title, setTitle] = useState('');
 
   // Refs pour éviter les problèmes de closure dans les timers
   const playbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPlayingRef = useRef(false);
+  const loopRef = useRef(false);
   const synthRef = useRef<PolySynthInstance | null>(null);
   const activeNoteRef = useRef<HTMLDivElement | null>(null);
 
@@ -76,7 +78,22 @@ function App() {
       bpmCourant: number,
       divisionsCourantes: number,
     ) => {
-      if (!isPlayingRef.current || index >= partitionCourante.length) {
+      if (!isPlayingRef.current) {
+        setIsPlaying(false);
+        setActiveNoteIndex(null);
+        return;
+      }
+
+      if (index >= partitionCourante.length) {
+        if (loopRef.current) {
+          // Boucle : reprendre depuis le début après une courte pause
+          playbackTimer.current = setTimeout(
+            () =>
+              jouerDepuis(0, partitionCourante, bpmCourant, divisionsCourantes),
+            50,
+          );
+          return;
+        }
         isPlayingRef.current = false;
         setIsPlaying(false);
         setActiveNoteIndex(null);
@@ -87,7 +104,9 @@ function App() {
 
       // Note d'accord : jouer immédiatement sans mettre à jour l'index affiché
       if (note.chord !== undefined) {
-        jouerNote(note);
+        // StartStop.Stop = 1 (sans import de l'enum pour éviter XSLTProcessor en test)
+        const isTiedStop = note.ties?.some((t) => (t.type as number) === 1);
+        if (!isTiedStop) jouerNote(note);
         playbackTimer.current = setTimeout(
           () =>
             jouerDepuis(
@@ -103,8 +122,9 @@ function App() {
 
       setActiveNoteIndex(index);
 
-      // Silence : avancer le timer sans jouer de note
-      if (note.rest === undefined) {
+      // Silence ou note liée (tie stop) : avancer le timer sans re-attaque
+      const isTiedStop = note.ties?.some((t) => (t.type as number) === 1);
+      if (note.rest === undefined && !isTiedStop) {
         jouerNote(note);
       }
 
@@ -139,6 +159,13 @@ function App() {
     setIsPlaying(false);
     setActiveNoteIndex(null);
     if (playbackTimer.current) clearTimeout(playbackTimer.current);
+  }, []);
+
+  const handleLoopToggle = useCallback(() => {
+    setIsLooping((prev) => {
+      loopRef.current = !prev;
+      return !prev;
+    });
   }, []);
 
   const handleScoreLoad = (
@@ -206,9 +233,11 @@ function App() {
         <div className='harp-container'>
           <UIControls
             isPlaying={isPlaying}
+            isLooping={isLooping}
             tempo={tempo}
             onPlay={handlePlay}
             onStop={handleStop}
+            onLoopToggle={handleLoopToggle}
             onTempoChange={setBpm}
             disabled={notes.length === 0}
             currentNoteIndex={activeNoteIndex}
