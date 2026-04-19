@@ -1,3 +1,9 @@
+export interface PracticeSession {
+  date: string;
+  correct: number;
+  total: number;
+}
+
 export interface HistoryEntry {
   id: string;
   title: string;
@@ -5,6 +11,7 @@ export interface HistoryEntry {
   loadedAt: string;
   playCount: number;
   lastPlayedAt?: string;
+  practiceSessions?: PracticeSession[];
 }
 
 const STORAGE_KEY = 'sonare-history';
@@ -49,6 +56,30 @@ export const recordPlay = (id: string): HistoryEntry[] => {
   if (entry) {
     entry.playCount += 1;
     entry.lastPlayedAt = new Date().toISOString();
+    saveHistory(entries);
+  }
+  return entries;
+};
+
+export const recordPractice = (
+  id: string,
+  correct: number,
+  total: number,
+): HistoryEntry[] => {
+  if (total === 0) return loadHistory();
+  const entries = loadHistory();
+  const entry = entries.find((e) => e.id === id);
+  if (entry) {
+    if (!entry.practiceSessions) entry.practiceSessions = [];
+    entry.practiceSessions.push({
+      date: new Date().toISOString(),
+      correct,
+      total,
+    });
+    // Garder au maximum 50 sessions par entrée
+    if (entry.practiceSessions.length > 50) {
+      entry.practiceSessions = entry.practiceSessions.slice(-50);
+    }
     saveHistory(entries);
   }
   return entries;

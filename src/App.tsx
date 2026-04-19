@@ -15,7 +15,9 @@ import {
   loadHistory,
   recordLoad,
   recordPlay,
+  recordPractice,
 } from './utils/history';
+import { downloadMusicXml } from './utils/musicxmlExport';
 import { useMidi } from './hooks/useMidi';
 import { pitchToMidi } from './utils/midiMapper';
 import ExercisePanel from './components/ExercisePanel';
@@ -49,6 +51,8 @@ function App() {
     null,
   );
   const currentEntryIdRef = useRef<string | null>(null);
+  const practiceCorrectRef = useRef(0);
+  const practiceTotalRef = useRef(0);
 
   // Refs pour éviter les problèmes de closure dans les timers
   const playbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -75,7 +79,18 @@ function App() {
 
   // Réinitialise le curseur de pratique quand une nouvelle partition est chargée
   useEffect(() => {
+    if (currentEntryIdRef.current && practiceTotalRef.current > 0) {
+      setHistory(
+        recordPractice(
+          currentEntryIdRef.current,
+          practiceCorrectRef.current,
+          practiceTotalRef.current,
+        ),
+      );
+    }
     practiceIndexRef.current = 0;
+    practiceCorrectRef.current = 0;
+    practiceTotalRef.current = 0;
     setMidiResult(null);
   }, [notes]);
 
@@ -320,7 +335,9 @@ function App() {
       );
 
       setActiveNoteIndex(idx);
+      practiceTotalRef.current += 1;
       if (midiNote === expected) {
+        practiceCorrectRef.current += 1;
         showMidiResult('correct');
         practiceIndexRef.current = idx + 1;
       } else {
@@ -447,6 +464,17 @@ function App() {
             currentNoteIndex={activeNoteIndex}
             totalNotes={notes.length}
           />
+          {notes.length > 0 && (
+            <button
+              className='btn-export'
+              onClick={() =>
+                downloadMusicXml(notes, divisions, tempo, title || 'partition')
+              }
+              title='Télécharger en MusicXML'
+            >
+              ⬇ Exporter MusicXML
+            </button>
+          )}
           <Canvas camera={{ position: [0, 0, 20], fov: 75 }}>
             <ambientLight intensity={0.5} />
             <directionalLight position={[10, 10, 5]} intensity={1} />

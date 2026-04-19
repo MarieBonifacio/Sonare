@@ -53,38 +53,38 @@
 ## v2.0 — Fonctionnalités avancées
 
 - [x] Exercices progressifs : gammes, arpèges, tierces — 6 tonalités, 3 niveaux, aller-retour
-- [ ] Synchronisation MIDI temps réel (WebMIDI API)
-- [ ] Export de partitions simplifiées (MusicXML ou PDF)
-- [ ] Sauvegarde de la progression (localStorage ou backend optionnel)
+- [x] Synchronisation MIDI temps réel (WebMIDI API) — détection + comparaison note active + mode pratique manuel
+- [x] Export de partitions simplifiées (MusicXML)
+- [x] Sauvegarde de la progression (localStorage)
 - [ ] Support multilingue (FR / EN)
 
 ---
 
-## v2.1 — Modèle 3D fidèle 🦊 (en cours)
+## v2.1 — Modèle 3D fidèle 🦊 ✅ (fait)
 
 Refonte visuelle du rendu 3D pour représenter la harpe renard de Marin Lhopiteau
 ([`@october.moth`](https://www.instagram.com/october.moth/), luthier).
 
 ### Forme générale
-- [ ] Colonne (pilier) : profil organique en bois clair, section ovale effilée vers le bas
-- [ ] Table d'harmonie : face triangulaire inclinée, grain bois visible en texture
-- [ ] Console (cou) : courbe prononcée partant de la table, montant vers la tête
+- [x] Colonne (pilier) : profil organique en bois clair, section ovale effilée vers le bas
+- [x] Table d'harmonie : face triangulaire inclinée, grain bois visible en texture
+- [x] Console (cou) : courbe prononcée partant de la table, montant vers la tête
 
 ### Tête sculptée — renard
-- [ ] Tête de renard en bout de console : museau allongé, oreilles pointues, yeux gravés
-- [ ] Pattes avant repliées sous le menton (détail caractéristique du modèle)
-- [ ] Matériau bois chaud (teinte chêne/cerisier clair, `#C68642` environ)
+- [x] Tête de renard en bout de console : museau allongé, oreilles pointues, yeux gravés
+- [x] Pattes avant repliées sous le menton (détail caractéristique du modèle)
+- [x] Matériau bois chaud (teinte chêne/cerisier clair, `#C5893C`)
 
 ### Cordes
-- [ ] 34 cordes (harpe celtique / folk, contre 47 pour la harpe de concert actuelle)
-- [ ] Cordes fines argentées (cylindres à très faible rayon, matériau métallique)
-- [ ] Chevilles apparentes en haut de la console (petites sphères ou cylindres courts)
+- [x] 36 cordes (harpe celtique / folk, contre 47 pour la harpe de concert actuelle)
+- [x] Cordes fines argentées (cylindres à très faible rayon, matériau métallique)
+- [x] Chevilles apparentes en haut de la console (cylindres courts)
 
 ### Technique
-- [ ] Modélisation procédurale Three.js (pas de GLTF externe) ou import d'un `.glb` custom
-- [ ] Matériau `MeshStandardMaterial` avec roughness/metalness pour le bois et le métal
-- [ ] Éclairage chaleureux pour valoriser les teintes bois (warm point light)
-- [ ] Garder l'`OrbitControls` existant pour la rotation libre
+- [x] Modélisation procédurale Three.js (pas de GLTF externe)
+- [x] Matériau `MeshStandardMaterial` avec roughness/metalness pour le bois et le métal
+- [x] Éclairage chaleureux pour valoriser les teintes bois (warm point light `#FFC870`)
+- [x] Garder l'`OrbitControls` existant pour la rotation libre
 
 ---
 
