@@ -15,11 +15,24 @@ export const extractMxlContent = async (
   return zip.files[musicXmlFile].async('string');
 };
 
-export const parseXmlToNotes = (xmlContent: string): Note[] => {
-  if (!xmlContent.trim()) return [];
+export interface ParseResult {
+  notes: Note[];
+  /** Divisions par noire (défaut 1 si absent du fichier). */
+  divisions: number;
+}
+
+export const parseXmlToNotes = (xmlContent: string): ParseResult => {
+  if (!xmlContent.trim()) return { notes: [], divisions: 1 };
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
-  if (!xmlDoc || !xmlDoc.getElementsByTagName) return [];
+  if (!xmlDoc || !xmlDoc.getElementsByTagName)
+    return { notes: [], divisions: 1 };
+
+  // Extraire la valeur <divisions> (premier élément trouvé dans la partition)
+  const divisionsEl = xmlDoc.getElementsByTagName('divisions')[0];
+  const divisions = divisionsEl
+    ? parseInt(divisionsEl.textContent || '1', 10)
+    : 1;
 
   const notes: Note[] = [];
   const noteElements = xmlDoc.getElementsByTagName('note');
@@ -51,5 +64,5 @@ export const parseXmlToNotes = (xmlContent: string): Note[] => {
     }
   }
 
-  return notes;
+  return { notes, divisions };
 };

@@ -15,7 +15,7 @@ const HarpStringModel: React.FC<HarpModelProps> = ({
   const activeString =
     activeNoteIndex !== null && notes[activeNoteIndex]?.pitch
       ? mapPitchToString({
-          step: notes[activeNoteIndex].pitch!.step,
+          step: notes[activeNoteIndex].pitch!.step ?? '',
           octave: notes[activeNoteIndex].pitch!.octave,
           alter: notes[activeNoteIndex].pitch!.alter ?? 0,
         })
