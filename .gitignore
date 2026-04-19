@@ -11,6 +11,9 @@ yarn-error.log*
 *.cache
 *.env
 
+# Couverture de tests
+coverage/
+
 # IDE/OS spécifiques
 .DS_Store
 Thumbs.db

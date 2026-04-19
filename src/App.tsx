@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import './styles.css';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
@@ -11,6 +11,7 @@ import UIControls from './components/UIControls';
 function App() {
   // État principal de la partition
   const [notes, setNotes] = useState<Note[]>([]);
+  const [divisions, setDivisions] = useState(1);
   const [activeNoteIndex, setActiveNoteIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [tempo, setBpm] = useState(120);
@@ -19,6 +20,7 @@ function App() {
   const playbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPlayingRef = useRef(false);
   const synthRef = useRef<Tone.PolySynth | null>(null);
+  const activeNoteRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     return () => {
@@ -26,6 +28,14 @@ function App() {
       if (playbackTimer.current) clearTimeout(playbackTimer.current);
     };
   }, []);
+
+  // Scroll automatique vers la note active
+  useEffect(() => {
+    activeNoteRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+    });
+  }, [activeNoteIndex]);
 
   const getSynth = (): Tone.PolySynth => {
     if (!synthRef.current) {
@@ -39,7 +49,7 @@ function App() {
 
   const jouerNote = (note: Note) => {
     if (!note.pitch) return;
-    const { step, octave, alter } = note.pitch;
+    const { step, octave, alter = 0 } = note.pitch;
     const alterSymbol = alter > 0 ? '#' : alter < 0 ? 'b' : '';
     const nomNote = `${step}${alterSymbol}${octave}`;
     try {
@@ -50,7 +60,12 @@ function App() {
   };
 
   const jouerDepuis = useCallback(
-    (index: number, partitionCourante: Note[], bpmCourant: number) => {
+    (
+      index: number,
+      partitionCourante: Note[],
+      bpmCourant: number,
+      divisionsCourantes: number,
+    ) => {
       if (!isPlayingRef.current || index >= partitionCourante.length) {
         isPlayingRef.current = false;
         setIsPlaying(false);
@@ -58,11 +73,20 @@ function App() {
         return;
       }
       setActiveNoteIndex(index);
-      jouerNote(partitionCourante[index]);
-      const dureeMs = 60_000 / bpmCourant;
+      const note = partitionCourante[index];
+      jouerNote(note);
+      // Durée réelle = (divisions MusicXML / divisions par noire) * ms par noire
+      const msParNoire = 60_000 / bpmCourant;
+      const dureeMs = ((note.duration ?? divisionsCourantes) / divisionsCourantes) * msParNoire;
       playbackTimer.current = setTimeout(
-        () => jouerDepuis(index + 1, partitionCourante, bpmCourant),
-        dureeMs,
+        () =>
+          jouerDepuis(
+            index + 1,
+            partitionCourante,
+            bpmCourant,
+            divisionsCourantes,
+          ),
+        Math.max(dureeMs, 50), // minimum 50 ms pour éviter les empilements
       );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -73,8 +97,8 @@ function App() {
     await Tone.start();
     isPlayingRef.current = true;
     setIsPlaying(true);
-    jouerDepuis(0, notes, tempo);
-  }, [notes, tempo, jouerDepuis]);
+    jouerDepuis(0, notes, tempo, divisions);
+  }, [notes, tempo, divisions, jouerDepuis]);
 
   const handleStop = useCallback(() => {
     isPlayingRef.current = false;
@@ -83,9 +107,10 @@ function App() {
     if (playbackTimer.current) clearTimeout(playbackTimer.current);
   }, []);
 
-  const handleScoreLoad = (loadedNotes: Note[]) => {
+  const handleScoreLoad = (loadedNotes: Note[], loadedDivisions: number) => {
     handleStop();
     setNotes(loadedNotes);
+    setDivisions(loadedDivisions);
   };
 
   return (
@@ -102,6 +127,7 @@ function App() {
             {notes.map((note, index) => (
               <div
                 key={index}
+                ref={activeNoteIndex === index ? activeNoteRef : null}
                 className={`note-card${activeNoteIndex === index ? ' note-card--active' : ''}`}
               >
                 <p>

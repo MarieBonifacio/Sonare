@@ -175,6 +175,40 @@ input:focus, textarea:focus {
   box-shadow: none;
 }
 
+.score-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.score-loader__label {
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  color: white;
+  transition: background 0.2s;
+}
+
+.score-loader__label:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.score-loader__erreur {
+  color: #e74c3c;
+  background: #fdf0ef;
+  border: 1px solid #e74c3c;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  max-width: 400px;
+  text-align: center;
+}
+
 .animated {
   animation: fadeIn 1s ease-in-out;
 }
