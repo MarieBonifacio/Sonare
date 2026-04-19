@@ -1,7 +1,6 @@
-import JSZip from 'jszip';
-import { Note } from 'musicxml-interfaces';
-import { DOMParser } from 'xmldom';
 import React, { useState } from 'react';
+import { Note } from 'musicxml-interfaces';
+import { extractMxlContent, parseXmlToNotes } from '../utils/xmlParser';
 
 interface ScoreLoaderProps {
   onLoad: (notes: Note[]) => void;
@@ -9,132 +8,65 @@ interface ScoreLoaderProps {
 
 const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
   const [fileName, setFileName] = useState<string | null>(null);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [chargement, setChargement] = useState(false);
+
+  const lireFichier = (file: File): Promise<ArrayBuffer> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.onerror = () =>
+        reject(new Error('Impossible de lire le fichier.'));
+      reader.readAsArrayBuffer(file);
+    });
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
-    if (!file) {
-      console.warn('Aucun fichier sélectionné.');
-      return;
-    }
+    if (!file) return;
 
-    console.log('Fichier détecté :', file.name);
     setFileName(file.name);
+    setErreur(null);
+    setChargement(true);
 
     try {
-      const fileContent = await readFile(file);
+      const buffer = await lireFichier(file);
       const xmlContent = file.name.endsWith('.mxl')
-        ? await extractMxlContent(fileContent)
-        : new TextDecoder().decode(fileContent);
-      parseXmlContent(xmlContent);
-    } catch (error) {
-      console.error('Erreur lors du traitement du fichier :', error);
-    }
-  };
+        ? await extractMxlContent(buffer)
+        : new TextDecoder().decode(buffer);
 
-  const readFile = (file: File): Promise<ArrayBuffer> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as ArrayBuffer);
-      reader.onerror = reject;
-      reader.readAsArrayBuffer(file);
-    });
-  };
+      const notes = parseXmlToNotes(xmlContent);
 
-  const extractMxlContent = async (
-    fileContent: ArrayBuffer,
-  ): Promise<string> => {
-    console.log('Tentative de décompression du fichier .mxl...');
-    const zip = await JSZip.loadAsync(fileContent);
-    console.log(
-      'Fichiers trouvés dans l’archive .mxl :',
-      Object.keys(zip.files),
-    );
-    const musicXmlFile = Object.keys(zip.files).find(
-      (name) => name === 'score.xml',
-    );
-
-    if (!musicXmlFile) {
-      throw new Error('Aucun fichier score.xml trouvé dans l’archive .mxl');
-    }
-
-    console.log('Fichier MusicXML trouvé :', musicXmlFile);
-    return zip.files[musicXmlFile].async('string');
-  };
-
-  const parseXmlContent = (xmlContent: string) => {
-    console.log('Début du parsing du contenu XML...');
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
-    console.log('Fichier XML parsé avec succès :', xmlDoc);
-
-    const notes: Note[] = [];
-    const noteElements = xmlDoc.getElementsByTagName('note');
-    console.log(`Nombre de notes trouvées : ${noteElements.length}`);
-
-    for (let i = 0; i < noteElements.length; i++) {
-      const step =
-        noteElements[i].getElementsByTagName('step')[0]?.textContent || '';
-      const octave = parseInt(
-        noteElements[i].getElementsByTagName('octave')[0]?.textContent || '0',
-        10,
-      );
-      const duration = parseInt(
-        noteElements[i].getElementsByTagName('duration')[0]?.textContent || '0',
-        10,
-      );
-      const alterElement = noteElements[i].getElementsByTagName('alter')[0];
-      const alter = alterElement
-        ? parseInt(alterElement.textContent || '0', 10)
-        : 0;
-
-      console.log(`Note ${i} :`, { step, octave, alter, duration });
-
-      if (step && !isNaN(octave)) {
-        notes.push({
-          pitch: {
-            step,
-            octave,
-            alter,
-          },
-          duration,
-          voice: 1,
-          type: '',
-          staff: 1,
-        } as Note);
-      } else {
-        console.warn(`Note ${i} ignorée en raison de données invalides :`, {
-          step,
-          octave,
-        });
+      if (notes.length === 0) {
+        setErreur(
+          "Aucune note trouvée dans ce fichier. Vérifiez qu'il s'agit bien d'une partition MusicXML valide.",
+        );
+        return;
       }
-    }
 
-    console.log('Notes extraites :', notes);
-    onLoad(notes);
+      onLoad(notes);
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Erreur inconnue lors du chargement.';
+      setErreur(message);
+    } finally {
+      setChargement(false);
+      // Réinitialise l'input pour permettre le rechargement du même fichier
+      event.target.value = '';
+    }
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '10px',
-      }}
-    >
-      <label
-        htmlFor='fileInput'
-        style={{
-          cursor: 'pointer',
-          color: 'blue',
-          textDecoration: 'underline',
-        }}
-      >
-        {fileName
-          ? `Chargé : ${fileName}`
-          : 'Cliquez pour charger une partition MusicXML'}
+    <div className='score-loader'>
+      <label htmlFor='fileInput' className='score-loader__label'>
+        {chargement
+          ? 'Chargement…'
+          : fileName
+            ? `✓ ${fileName}`
+            : 'Charger une partition MusicXML'}
       </label>
       <input
         type='file'
@@ -143,6 +75,7 @@ const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
         onChange={handleFileUpload}
         style={{ display: 'none' }}
       />
+      {erreur && <p className='score-loader__erreur'>{erreur}</p>}
     </div>
   );
 };

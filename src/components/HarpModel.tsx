@@ -1,22 +1,11 @@
 import React from 'react';
 import { Note } from 'musicxml-interfaces';
+import { mapPitchToString, STRING_COUNT } from '../utils/noteMapper';
 
 interface HarpModelProps {
   notes: Note[];
   activeNoteIndex: number | null;
 }
-
-const mapPitchToString = (pitch: {
-  step: string;
-  octave: number;
-  alter: number;
-}): number => {
-  const notesOrder = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-  const stepIndex = notesOrder.indexOf(pitch.step);
-  if (stepIndex === -1) return -1;
-  const stringIndex = stepIndex + pitch.octave * 7 + pitch.alter;
-  return stringIndex < 0 || stringIndex >= 37 ? -1 : stringIndex;
-};
 
 const HarpStringModel: React.FC<HarpModelProps> = ({
   notes,
@@ -34,7 +23,7 @@ const HarpStringModel: React.FC<HarpModelProps> = ({
 
   return (
     <group>
-      {Array.from({ length: 37 }, (_, index) => {
+      {Array.from({ length: STRING_COUNT }, (_, index) => {
         const zPosition = index * 0.5 - (37 * 0.5) / 2;
         const stringLength = 1 + index * 0.5;
         return (

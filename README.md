@@ -1,50 +1,99 @@
-# React + TypeScript + Vite
+# Sonare
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Logiciel d'apprentissage de la harpe : visualisation 3D interactive synchronisée avec l'import de partitions MusicXML.
 
-Currently, two official plugins are available:
+## Fonctionnalités
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Import de partitions `.musicxml`, `.xml`, `.mxl`
+- Harpe 3D interactive (37 cordes) — rotation/zoom à la souris
+- Lecture séquentielle des notes avec mise en évidence de la corde active
+- Audio synthétisé (ton triangle, rendu harpistique) via Tone.js
+- Contrôle du tempo (40–240 BPM)
 
-## Expanding the ESLint configuration
+## Démarrage rapide
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```bash
+npm install
+npm run dev        # Serveur de développement → http://localhost:5173
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## Scripts disponibles
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+| Commande | Description |
+|---|---|
+| `npm run dev` | Serveur Vite (hot reload) |
+| `npm run build` | Type-check TypeScript + build production |
+| `npm run preview` | Servir le build de production en local |
+| `npm run lint` | ESLint sur tous les fichiers |
+| `npm test` | Suite de tests Vitest |
+| `npm run coverage` | Rapport de couverture de tests |
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+## Architecture
+
 ```
+src/
+├── App.tsx                  # Composant racine — état + mise en page
+├── main.tsx                 # Point d'entrée React 18
+├── styles.css               # Styles globaux (thème vert émeraude)
+├── components/
+│   ├── HarpModel.tsx        # Rendu 3D des cordes (@react-three/fiber)
+│   ├── ScoreLoader.tsx      # Upload + parsing MusicXML
+│   └── UIControls.tsx       # Bouton lecture/arrêt + slider tempo
+└── utils/
+    ├── noteMapper.ts        # Mapping pitch MusicXML → index de corde (0–36)
+    └── xmlParser.ts         # Extraction de notes depuis XML/MXL
+```
+
+### Flux de données
+
+```
+Fichier MusicXML
+    → ScoreLoader (xmlParser.ts)
+    → App.tsx [notes: Note[], activeNoteIndex]
+    → HarpModel (noteMapper.ts) — corde illuminée en jaune
+    → UIControls — lecture audio (Tone.js PolySynth)
+```
+
+## Stack technique
+
+| Outil | Version | Rôle |
+|---|---|---|
+| Vite | 6.0 | Build & dev server |
+| React | 18.3 | Framework UI |
+| TypeScript | 5.6 | Typage strict |
+| Three.js | 0.171 | Moteur 3D |
+| @react-three/fiber | 8.17 | Renderer React pour Three.js |
+| Tone.js | 15.0 | Synthèse audio Web |
+| JSZip | 3.10 | Décompression `.mxl` |
+| xmldom | 0.6 | Parser XML compatible navigateur |
+| Vitest | 2.x | Tests unitaires |
+
+## Tests
+
+```bash
+npm test             # Lance les tests une fois
+npm run test:watch   # Mode watch (développement)
+npm run coverage     # Rapport de couverture HTML
+```
+
+Les tests couvrent :
+- `noteMapper.ts` — mapping note→corde (11 cas)
+- `xmlParser.ts` — parsing XML/MXL (7 cas, dont gestion d'erreurs)
+
+## Fichiers de test inclus
+
+Un fichier MusicXML d'exemple est disponible :
+
+```
+public/scores/Peaceful_Waters.mxl
+```
+
+## Limitations connues
+
+| Zone | Limitation |
+|---|---|
+| Mapping cordes | 37 cordes couvrent C0–G5 ; les harpes réelles en ont 47 |
+| Playback | Durées MusicXML ignorées ; tempo = 1 note/battement |
+| Audio | Synthèse triangle ; pas d'échantillons réels de corde de harpe |
+| GLTF | Modèle 3D `public/models/harp/` présent mais non utilisé (cordes procédurales) |
+| Tests | Pas de tests de composants React ni de tests E2E |
