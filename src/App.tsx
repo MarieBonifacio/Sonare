@@ -1,12 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import './styles.css';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import * as Tone from 'tone';
 import { Note } from 'musicxml-interfaces';
 import HarpModel from './components/HarpModel';
 import ScoreLoader from './components/ScoreLoader';
 import UIControls from './components/UIControls';
+
+// Type minimal pour ne pas importer Tone.js au chargement initial
+type PolySynthInstance = {
+  triggerAttackRelease: (note: string, duration: string) => void;
+  dispose: () => void;
+};
 
 function App() {
   // État principal de la partition
@@ -14,12 +19,15 @@ function App() {
   const [divisions, setDivisions] = useState(1);
   const [activeNoteIndex, setActiveNoteIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isLooping, setIsLooping] = useState(false);
   const [tempo, setBpm] = useState(120);
+  const [title, setTitle] = useState('');
 
   // Refs pour éviter les problèmes de closure dans les timers
   const playbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPlayingRef = useRef(false);
-  const synthRef = useRef<Tone.PolySynth | null>(null);
+  const loopRef = useRef(false);
+  const synthRef = useRef<PolySynthInstance | null>(null);
   const activeNoteRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -37,8 +45,11 @@ function App() {
     });
   }, [activeNoteIndex]);
 
-  const getSynth = (): Tone.PolySynth => {
+  // Chargement paresseux de Tone.js : n'est importé qu'au premier clic sur Lecture
+  const getSynth = async (): Promise<PolySynthInstance> => {
     if (!synthRef.current) {
+      const Tone = await import('tone');
+      await Tone.start();
       synthRef.current = new Tone.PolySynth(Tone.Synth, {
         oscillator: { type: 'triangle' },
         envelope: { attack: 0.02, decay: 0.5, sustain: 0.1, release: 0.8 },
@@ -47,13 +58,14 @@ function App() {
     return synthRef.current;
   };
 
-  const jouerNote = (note: Note) => {
+  const jouerNote = async (note: Note) => {
     if (!note.pitch) return;
     const { step, octave, alter = 0 } = note.pitch;
     const alterSymbol = alter > 0 ? '#' : alter < 0 ? 'b' : '';
     const nomNote = `${step}${alterSymbol}${octave}`;
     try {
-      getSynth().triggerAttackRelease(nomNote, '8n');
+      const synth = await getSynth();
+      synth.triggerAttackRelease(nomNote, '8n');
     } catch {
       // Note hors de la plage du synthétiseur — ignorée silencieusement
     }
@@ -66,18 +78,61 @@ function App() {
       bpmCourant: number,
       divisionsCourantes: number,
     ) => {
-      if (!isPlayingRef.current || index >= partitionCourante.length) {
+      if (!isPlayingRef.current) {
+        setIsPlaying(false);
+        setActiveNoteIndex(null);
+        return;
+      }
+
+      if (index >= partitionCourante.length) {
+        if (loopRef.current) {
+          // Boucle : reprendre depuis le début après une courte pause
+          playbackTimer.current = setTimeout(
+            () =>
+              jouerDepuis(0, partitionCourante, bpmCourant, divisionsCourantes),
+            50,
+          );
+          return;
+        }
         isPlayingRef.current = false;
         setIsPlaying(false);
         setActiveNoteIndex(null);
         return;
       }
-      setActiveNoteIndex(index);
+
       const note = partitionCourante[index];
-      jouerNote(note);
-      // Durée réelle = (divisions MusicXML / divisions par noire) * ms par noire
+
+      // Note d'accord : jouer immédiatement sans mettre à jour l'index affiché
+      if (note.chord !== undefined) {
+        // StartStop.Stop = 1 (sans import de l'enum pour éviter XSLTProcessor en test)
+        const isTiedStop = note.ties?.some((t) => (t.type as number) === 1);
+        if (!isTiedStop) jouerNote(note);
+        playbackTimer.current = setTimeout(
+          () =>
+            jouerDepuis(
+              index + 1,
+              partitionCourante,
+              bpmCourant,
+              divisionsCourantes,
+            ),
+          0,
+        );
+        return;
+      }
+
+      setActiveNoteIndex(index);
+
+      // Silence ou note liée (tie stop) : avancer le timer sans re-attaque
+      const isTiedStop = note.ties?.some((t) => (t.type as number) === 1);
+      if (note.rest === undefined && !isTiedStop) {
+        jouerNote(note);
+      }
+
+      // Durée réelle = (duration MusicXML / divisions par noire) * ms par noire
       const msParNoire = 60_000 / bpmCourant;
-      const dureeMs = ((note.duration ?? divisionsCourantes) / divisionsCourantes) * msParNoire;
+      const dureeMs =
+        ((note.duration ?? divisionsCourantes) / divisionsCourantes) *
+        msParNoire;
       playbackTimer.current = setTimeout(
         () =>
           jouerDepuis(
@@ -86,7 +141,7 @@ function App() {
             bpmCourant,
             divisionsCourantes,
           ),
-        Math.max(dureeMs, 50), // minimum 50 ms pour éviter les empilements
+        Math.max(dureeMs, 50),
       );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -94,7 +149,6 @@ function App() {
   );
 
   const handlePlay = useCallback(async () => {
-    await Tone.start();
     isPlayingRef.current = true;
     setIsPlaying(true);
     jouerDepuis(0, notes, tempo, divisions);
@@ -107,15 +161,30 @@ function App() {
     if (playbackTimer.current) clearTimeout(playbackTimer.current);
   }, []);
 
-  const handleScoreLoad = (loadedNotes: Note[], loadedDivisions: number) => {
+  const handleLoopToggle = useCallback(() => {
+    setIsLooping((prev) => {
+      loopRef.current = !prev;
+      return !prev;
+    });
+  }, []);
+
+  const handleScoreLoad = (
+    loadedNotes: Note[],
+    loadedDivisions: number,
+    loadedTempo?: number,
+    loadedTitle?: string,
+  ) => {
     handleStop();
     setNotes(loadedNotes);
     setDivisions(loadedDivisions);
+    if (loadedTempo !== undefined) setBpm(Math.round(loadedTempo));
+    setTitle(loadedTitle ?? '');
   };
 
   return (
     <div className='container'>
       <div className='header'>
+        {title && <h2 className='score-title'>{title}</h2>}
         <ScoreLoader onLoad={handleScoreLoad} />
       </div>
 
@@ -130,18 +199,31 @@ function App() {
                 ref={activeNoteIndex === index ? activeNoteRef : null}
                 className={`note-card${activeNoteIndex === index ? ' note-card--active' : ''}`}
               >
-                <p>
-                  <strong>Note :</strong> {note.pitch?.step}
-                  {(note.pitch?.alter ?? 0) > 0
-                    ? '♯'
-                    : (note.pitch?.alter ?? 0) < 0
-                      ? '♭'
-                      : ''}
-                  {note.pitch?.octave}
-                </p>
-                <p>
-                  <strong>Durée :</strong> {note.duration}
-                </p>
+                {note.rest !== undefined ? (
+                  <>
+                    <p>
+                      <strong>Note :</strong> Silence
+                    </p>
+                    <p>
+                      <strong>Durée :</strong> {note.duration}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p>
+                      <strong>Note :</strong> {note.pitch?.step}
+                      {(note.pitch?.alter ?? 0) > 0
+                        ? '♯'
+                        : (note.pitch?.alter ?? 0) < 0
+                          ? '♭'
+                          : ''}
+                      {note.pitch?.octave}
+                    </p>
+                    <p>
+                      <strong>Durée :</strong> {note.duration}
+                    </p>
+                  </>
+                )}
               </div>
             ))}
           </div>
@@ -151,17 +233,23 @@ function App() {
         <div className='harp-container'>
           <UIControls
             isPlaying={isPlaying}
+            isLooping={isLooping}
             tempo={tempo}
             onPlay={handlePlay}
             onStop={handleStop}
+            onLoopToggle={handleLoopToggle}
             onTempoChange={setBpm}
             disabled={notes.length === 0}
+            currentNoteIndex={activeNoteIndex}
+            totalNotes={notes.length}
           />
           <Canvas camera={{ position: [0, 0, 20], fov: 75 }}>
             <ambientLight intensity={0.5} />
             <directionalLight position={[10, 10, 5]} intensity={1} />
             <pointLight position={[10, 10, 10]} />
-            <HarpModel notes={notes} activeNoteIndex={activeNoteIndex} />
+            <Suspense fallback={null}>
+              <HarpModel notes={notes} activeNoteIndex={activeNoteIndex} />
+            </Suspense>
             <OrbitControls />
           </Canvas>
         </div>
