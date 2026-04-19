@@ -15,6 +15,7 @@ const defaultProps = {
   disabled: false,
   currentNoteIndex: null,
   totalNotes: 0,
+  lang: 'fr' as const,
 };
 
 describe('UIControls', () => {

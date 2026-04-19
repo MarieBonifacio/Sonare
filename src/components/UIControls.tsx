@@ -1,4 +1,5 @@
 import React from 'react';
+import { Lang, T } from '../utils/i18n';
 
 interface UIControlsProps {
   isPlaying: boolean;
@@ -11,6 +12,7 @@ interface UIControlsProps {
   disabled: boolean;
   currentNoteIndex: number | null;
   totalNotes: number;
+  lang: Lang;
 }
 
 const UIControls: React.FC<UIControlsProps> = ({
@@ -24,25 +26,29 @@ const UIControls: React.FC<UIControlsProps> = ({
   disabled,
   currentNoteIndex,
   totalNotes,
+  lang,
 }) => {
+  const tr = T[lang];
   const progress =
     totalNotes > 0 ? (((currentNoteIndex ?? -1) + 1) / totalNotes) * 100 : 0;
 
   return (
     <div className='ui-controls'>
       <button onClick={isPlaying ? onStop : onPlay} disabled={disabled}>
-        {isPlaying ? '⏹ Arrêter' : '▶ Lecture'}
+        {isPlaying ? tr.stop : tr.play}
       </button>
       <button
         onClick={onLoopToggle}
         disabled={disabled}
         className={`btn-loop${isLooping ? ' btn-loop--active' : ''}`}
-        title={isLooping ? 'Désactiver la boucle' : 'Activer la boucle'}
+        title={isLooping ? tr.disableLoop : tr.enableLoop}
       >
-        ↺ Boucle
+        {tr.loop}
       </button>
       <label className='tempo-label'>
-        <span>Tempo : {tempo} BPM</span>
+        <span>
+          {tr.tempo} : {tempo} BPM
+        </span>
         <input
           type='range'
           min={40}

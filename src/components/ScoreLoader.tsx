@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Note } from 'musicxml-interfaces';
+import { Lang, T } from '../utils/i18n';
 import { extractMxlContent, parseXmlToNotes } from '../utils/xmlParser';
 
 interface ScoreLoaderProps {
@@ -11,9 +12,11 @@ interface ScoreLoaderProps {
     volumes?: number[],
     filename?: string,
   ) => void;
+  lang: Lang;
 }
 
-const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
+const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad, lang }) => {
+  const tr = T[lang];
   const [fileName, setFileName] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [chargement, setChargement] = useState(false);
@@ -48,7 +51,9 @@ const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
 
       if (notes.length === 0) {
         setErreur(
-          "Aucune note trouvée dans ce fichier. Vérifiez qu'il s'agit bien d'une partition MusicXML valide.",
+          lang === 'fr'
+            ? "Aucune note trouvée dans ce fichier. Vérifiez qu'il s'agit bien d'une partition MusicXML valide."
+            : "No notes found in this file. Make sure it's a valid MusicXML score.",
         );
         return;
       }
@@ -58,11 +63,12 @@ const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
       const message =
         err instanceof Error
           ? err.message
-          : 'Erreur inconnue lors du chargement.';
+          : lang === 'fr'
+            ? 'Erreur inconnue lors du chargement.'
+            : 'Unknown error while loading.';
       setErreur(message);
     } finally {
       setChargement(false);
-      // Réinitialise l'input pour permettre le rechargement du même fichier
       event.target.value = '';
     }
   };
@@ -70,11 +76,7 @@ const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
   return (
     <div className='score-loader'>
       <label htmlFor='fileInput' className='score-loader__label'>
-        {chargement
-          ? 'Chargement…'
-          : fileName
-            ? `✓ ${fileName}`
-            : 'Charger une partition MusicXML'}
+        {chargement ? tr.loading : fileName ? `✓ ${fileName}` : tr.loadScore}
       </label>
       <input
         type='file'

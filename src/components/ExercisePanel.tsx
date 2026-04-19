@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Lang, T } from '../utils/i18n';
 import {
   Difficulty,
   ExerciseConfig,
@@ -10,9 +11,11 @@ import {
 
 interface ExercisePanelProps {
   onGenerate: (exercise: GeneratedExercise) => void;
+  lang: Lang;
 }
 
-const ExercisePanel: React.FC<ExercisePanelProps> = ({ onGenerate }) => {
+const ExercisePanel: React.FC<ExercisePanelProps> = ({ onGenerate, lang }) => {
+  const tr = T[lang];
   const [config, setConfig] = useState<ExerciseConfig>({
     type: 'gamme',
     key: 'C',
@@ -28,10 +31,10 @@ const ExercisePanel: React.FC<ExercisePanelProps> = ({ onGenerate }) => {
 
   return (
     <div className='exercise-panel'>
-      <h4 className='exercise-panel__title'>Exercices progressifs</h4>
+      <h4 className='exercise-panel__title'>{tr.exercisesTitle}</h4>
       <div className='exercise-panel__grid'>
         <div className='exercise-field'>
-          <label>Type</label>
+          <label>{tr.exType}</label>
           <div className='exercise-btn-group'>
             {(['gamme', 'arpege', 'tierces'] as ExerciseType[]).map((t) => (
               <button
@@ -40,17 +43,17 @@ const ExercisePanel: React.FC<ExercisePanelProps> = ({ onGenerate }) => {
                 onClick={() => set('type', t)}
               >
                 {t === 'gamme'
-                  ? 'Gamme'
+                  ? tr.scale
                   : t === 'arpege'
-                    ? 'Arpège'
-                    : 'Tierces'}
+                    ? tr.arpeggio
+                    : tr.thirds}
               </button>
             ))}
           </div>
         </div>
 
         <div className='exercise-field'>
-          <label>Tonalité</label>
+          <label>{tr.key}</label>
           <div className='exercise-btn-group'>
             {(['C', 'G', 'D', 'A', 'F', 'Bb'] as ScaleKey[]).map((k) => (
               <button
@@ -65,7 +68,7 @@ const ExercisePanel: React.FC<ExercisePanelProps> = ({ onGenerate }) => {
         </div>
 
         <div className='exercise-field'>
-          <label>Octaves</label>
+          <label>{tr.octaves}</label>
           <div className='exercise-btn-group'>
             {([1, 2] as const).map((o) => (
               <button
@@ -80,25 +83,25 @@ const ExercisePanel: React.FC<ExercisePanelProps> = ({ onGenerate }) => {
         </div>
 
         <div className='exercise-field'>
-          <label>Direction</label>
+          <label>{tr.direction}</label>
           <div className='exercise-btn-group'>
             <button
               className={`btn-option${config.direction === 'montant' ? ' btn-option--active' : ''}`}
               onClick={() => set('direction', 'montant')}
             >
-              ↑ Montant
+              {tr.ascending}
             </button>
             <button
               className={`btn-option${config.direction === 'montant-descendant' ? ' btn-option--active' : ''}`}
               onClick={() => set('direction', 'montant-descendant')}
             >
-              ↑↓ Aller-retour
+              {tr.roundTrip}
             </button>
           </div>
         </div>
 
         <div className='exercise-field'>
-          <label>Niveau</label>
+          <label>{tr.level}</label>
           <div className='exercise-btn-group'>
             {(['debutant', 'intermediaire', 'avance'] as Difficulty[]).map(
               (d) => (
@@ -108,10 +111,10 @@ const ExercisePanel: React.FC<ExercisePanelProps> = ({ onGenerate }) => {
                   onClick={() => set('difficulty', d)}
                 >
                   {d === 'debutant'
-                    ? 'Débutant'
+                    ? tr.beginner
                     : d === 'intermediaire'
-                      ? 'Intermédiaire'
-                      : 'Avancé'}
+                      ? tr.intermediate
+                      : tr.advanced}
                 </button>
               ),
             )}
@@ -123,7 +126,7 @@ const ExercisePanel: React.FC<ExercisePanelProps> = ({ onGenerate }) => {
         className='btn-generate'
         onClick={() => onGenerate(generateExercise(config))}
       >
-        ▶ Générer l&apos;exercice
+        {tr.generate}
       </button>
     </div>
   );
