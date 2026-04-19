@@ -26,13 +26,17 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/).
 - Dynamiques MusicXML (`<dynamics><f/>`, `<sound dynamics="X">`) appliquées comme vélocité Tone.js
 - Mode doigté : bouton ✋ Doigté dans le panneau des notes, affiche le doigt recommandé (1–4) par note
 - `getRecommendedFinger(step)` dans `noteMapper.ts` (C/F=1, D/G=2, E/A=3, B=4)
+- Historique des partitions : persisté dans localStorage (max 20 entrées), panneau déroulant dans l'en-tête
+- `history.ts` — `recordLoad`, `recordPlay`, `clearHistory`, `loadHistory` avec upsert par filename
+- `HistoryPanel.tsx` — liste les partitions récentes avec date et compteur de lectures
+- 11 tests Vitest pour `history.ts` (upsert, limite, JSON corrompu, playCount)
 
 ### Modifié
 - Tone.js chargé en import dynamique (`import('tone')`) — réduit le bundle initial
 - `<HarpModel>` enveloppé dans `<Suspense>` pour le chargement asynchrone du GLTF
 - Cordes : longueurs inversées (graves = plus longues, conformément à une vraie harpe)
 - `getSynth()` encapsule le `PolySynth` dans un type minimal — isole l'API Tone.js
-- Tests : 60 tests (dont 9 nouveaux pour dynamiques/volumes et doigté)
+- Tests : 71 tests (dont 11 nouveaux pour l'historique)
 
 ---
 
