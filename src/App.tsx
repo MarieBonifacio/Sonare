@@ -18,6 +18,8 @@ import {
 } from './utils/history';
 import { useMidi } from './hooks/useMidi';
 import { pitchToMidi } from './utils/midiMapper';
+import ExercisePanel from './components/ExercisePanel';
+import { GeneratedExercise } from './utils/exerciseGenerator';
 
 // Type minimal pour ne pas importer Tone.js au chargement initial
 type PolySynthInstance = {
@@ -42,6 +44,7 @@ function App() {
   const [showFingering, setShowFingering] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory());
   const [showHistory, setShowHistory] = useState(false);
+  const [showExercises, setShowExercises] = useState(false);
   const [midiResult, setMidiResult] = useState<'correct' | 'error' | null>(
     null,
   );
@@ -259,6 +262,19 @@ function App() {
     setHistory([]);
   }, []);
 
+  const handleExerciseGenerate = useCallback(
+    (exercise: GeneratedExercise) => {
+      handleStop();
+      setNotes(exercise.notes);
+      setDivisions(exercise.divisions);
+      setVolumes(exercise.volumes);
+      setBpm(exercise.tempo);
+      setTitle(exercise.title);
+      setShowExercises(false);
+    },
+    [handleStop],
+  );
+
   const showMidiResult = useCallback((result: 'correct' | 'error') => {
     setMidiResult(result);
     if (midiResultTimer.current) clearTimeout(midiResultTimer.current);
@@ -332,6 +348,13 @@ function App() {
             >
               📋 Historique
             </button>
+            <button
+              className={`btn-history${showExercises ? ' btn-history--active' : ''}`}
+              onClick={() => setShowExercises((e) => !e)}
+              title='Exercices progressifs'
+            >
+              🎯 Exercices
+            </button>
             {midiStatus === 'connected' && (
               <span className='midi-badge midi-badge--connected'>
                 🎹 {midiDeviceName}
@@ -347,6 +370,7 @@ function App() {
         {showHistory && (
           <HistoryPanel entries={history} onClear={handleClearHistory} />
         )}
+        {showExercises && <ExercisePanel onGenerate={handleExerciseGenerate} />}
       </div>
 
       <div className='content'>
