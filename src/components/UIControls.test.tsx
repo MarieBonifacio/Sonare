@@ -11,6 +11,8 @@ const defaultProps = {
   onStop: vi.fn(),
   onTempoChange: vi.fn(),
   disabled: false,
+  currentNoteIndex: null,
+  totalNotes: 0,
 };
 
 describe('UIControls', () => {
@@ -58,5 +60,25 @@ describe('UIControls', () => {
     render(<UIControls {...defaultProps} onTempoChange={onTempoChange} />);
     fireEvent.change(screen.getByRole('slider'), { target: { value: '140' } });
     expect(onTempoChange).toHaveBeenCalledWith(140);
+  });
+
+  it("n'affiche pas la barre de progression quand totalNotes=0", () => {
+    render(<UIControls {...defaultProps} totalNotes={0} />);
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+  });
+
+  it('affiche la barre de progression quand totalNotes > 0', () => {
+    render(
+      <UIControls {...defaultProps} totalNotes={10} currentNoteIndex={null} />,
+    );
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+  });
+
+  it('affiche 100% de progression à la dernière note', () => {
+    render(
+      <UIControls {...defaultProps} totalNotes={10} currentNoteIndex={9} />,
+    );
+    const bar = screen.getByRole('progressbar');
+    expect(bar).toHaveAttribute('aria-valuenow', '100');
   });
 });

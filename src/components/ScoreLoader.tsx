@@ -3,7 +3,12 @@ import { Note } from 'musicxml-interfaces';
 import { extractMxlContent, parseXmlToNotes } from '../utils/xmlParser';
 
 interface ScoreLoaderProps {
-  onLoad: (notes: Note[], divisions: number) => void;
+  onLoad: (
+    notes: Note[],
+    divisions: number,
+    tempo?: number,
+    title?: string,
+  ) => void;
 }
 
 const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
@@ -36,7 +41,7 @@ const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
         ? await extractMxlContent(buffer)
         : new TextDecoder().decode(buffer);
 
-      const { notes, divisions } = parseXmlToNotes(xmlContent);
+      const { notes, divisions, tempo, title } = parseXmlToNotes(xmlContent);
 
       if (notes.length === 0) {
         setErreur(
@@ -45,7 +50,7 @@ const ScoreLoader: React.FC<ScoreLoaderProps> = ({ onLoad }) => {
         return;
       }
 
-      onLoad(notes, divisions);
+      onLoad(notes, divisions, tempo, title);
     } catch (err) {
       const message =
         err instanceof Error

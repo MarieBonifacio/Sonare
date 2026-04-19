@@ -7,6 +7,8 @@ interface UIControlsProps {
   onStop: () => void;
   onTempoChange: (bpm: number) => void;
   disabled: boolean;
+  currentNoteIndex: number | null;
+  totalNotes: number;
 }
 
 const UIControls: React.FC<UIControlsProps> = ({
@@ -16,7 +18,12 @@ const UIControls: React.FC<UIControlsProps> = ({
   onStop,
   onTempoChange,
   disabled,
+  currentNoteIndex,
+  totalNotes,
 }) => {
+  const progress =
+    totalNotes > 0 ? (((currentNoteIndex ?? -1) + 1) / totalNotes) * 100 : 0;
+
   return (
     <div className='ui-controls'>
       <button onClick={isPlaying ? onStop : onPlay} disabled={disabled}>
@@ -33,6 +40,20 @@ const UIControls: React.FC<UIControlsProps> = ({
           disabled={isPlaying}
         />
       </label>
+      {totalNotes > 0 && (
+        <div
+          className='progress-bar'
+          role='progressbar'
+          aria-valuenow={Math.round(progress)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div
+            className='progress-bar__fill'
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
     </div>
   );
 };

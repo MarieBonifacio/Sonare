@@ -20,6 +20,7 @@ function App() {
   const [activeNoteIndex, setActiveNoteIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [tempo, setBpm] = useState(120);
+  const [title, setTitle] = useState('');
 
   // Refs pour éviter les problèmes de closure dans les timers
   const playbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -81,9 +82,32 @@ function App() {
         setActiveNoteIndex(null);
         return;
       }
-      setActiveNoteIndex(index);
+
       const note = partitionCourante[index];
-      jouerNote(note);
+
+      // Note d'accord : jouer immédiatement sans mettre à jour l'index affiché
+      if (note.chord !== undefined) {
+        jouerNote(note);
+        playbackTimer.current = setTimeout(
+          () =>
+            jouerDepuis(
+              index + 1,
+              partitionCourante,
+              bpmCourant,
+              divisionsCourantes,
+            ),
+          0,
+        );
+        return;
+      }
+
+      setActiveNoteIndex(index);
+
+      // Silence : avancer le timer sans jouer de note
+      if (note.rest === undefined) {
+        jouerNote(note);
+      }
+
       // Durée réelle = (duration MusicXML / divisions par noire) * ms par noire
       const msParNoire = 60_000 / bpmCourant;
       const dureeMs =
@@ -117,15 +141,23 @@ function App() {
     if (playbackTimer.current) clearTimeout(playbackTimer.current);
   }, []);
 
-  const handleScoreLoad = (loadedNotes: Note[], loadedDivisions: number) => {
+  const handleScoreLoad = (
+    loadedNotes: Note[],
+    loadedDivisions: number,
+    loadedTempo?: number,
+    loadedTitle?: string,
+  ) => {
     handleStop();
     setNotes(loadedNotes);
     setDivisions(loadedDivisions);
+    if (loadedTempo !== undefined) setBpm(Math.round(loadedTempo));
+    setTitle(loadedTitle ?? '');
   };
 
   return (
     <div className='container'>
       <div className='header'>
+        {title && <h2 className='score-title'>{title}</h2>}
         <ScoreLoader onLoad={handleScoreLoad} />
       </div>
 
@@ -140,18 +172,31 @@ function App() {
                 ref={activeNoteIndex === index ? activeNoteRef : null}
                 className={`note-card${activeNoteIndex === index ? ' note-card--active' : ''}`}
               >
-                <p>
-                  <strong>Note :</strong> {note.pitch?.step}
-                  {(note.pitch?.alter ?? 0) > 0
-                    ? '♯'
-                    : (note.pitch?.alter ?? 0) < 0
-                      ? '♭'
-                      : ''}
-                  {note.pitch?.octave}
-                </p>
-                <p>
-                  <strong>Durée :</strong> {note.duration}
-                </p>
+                {note.rest !== undefined ? (
+                  <>
+                    <p>
+                      <strong>Note :</strong> Silence
+                    </p>
+                    <p>
+                      <strong>Durée :</strong> {note.duration}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p>
+                      <strong>Note :</strong> {note.pitch?.step}
+                      {(note.pitch?.alter ?? 0) > 0
+                        ? '♯'
+                        : (note.pitch?.alter ?? 0) < 0
+                          ? '♭'
+                          : ''}
+                      {note.pitch?.octave}
+                    </p>
+                    <p>
+                      <strong>Durée :</strong> {note.duration}
+                    </p>
+                  </>
+                )}
               </div>
             ))}
           </div>
@@ -166,6 +211,8 @@ function App() {
             onStop={handleStop}
             onTempoChange={setBpm}
             disabled={notes.length === 0}
+            currentNoteIndex={activeNoteIndex}
+            totalNotes={notes.length}
           />
           <Canvas camera={{ position: [0, 0, 20], fov: 75 }}>
             <ambientLight intensity={0.5} />

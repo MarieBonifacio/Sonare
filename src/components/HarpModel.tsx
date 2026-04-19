@@ -35,10 +35,11 @@ const HarpStringModel: React.FC<HarpModelProps> = ({
         rotation={[0, -Math.PI / 6, 0]}
       />
 
-      {/* Cordes procédurales — superposées sur le corps */}
+      {/* 47 cordes procédurales — C1 (basse, longue) à G7 (aigüe, courte) */}
       {Array.from({ length: STRING_COUNT }, (_, index) => {
-        const zPosition = index * 0.5 - (37 * 0.5) / 2;
-        const stringLength = 1 + index * 0.5;
+        const zPosition = index * 0.5 - (STRING_COUNT * 0.5) / 2;
+        // Les cordes graves (index bas) sont plus longues
+        const stringLength = 1 + (STRING_COUNT - 1 - index) * 0.4;
         return (
           <mesh key={index} position={[0, 0, zPosition]}>
             <cylinderGeometry args={[0.1, 0.1, stringLength]} />
