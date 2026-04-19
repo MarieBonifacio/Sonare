@@ -676,6 +676,99 @@ button {
   color: #fff;
 }
 
+/* ─── LLM panel ─── */
+.llm-panel {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-top: 10px;
+}
+
+.llm-panel__title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+
+.llm-panel__field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.llm-panel__field label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.llm-input,
+.llm-textarea {
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color var(--transition);
+  resize: none;
+}
+
+.llm-input:focus,
+.llm-textarea:focus {
+  border-color: var(--accent);
+}
+
+.llm-input::placeholder,
+.llm-textarea::placeholder {
+  color: var(--text-dim);
+}
+
+.llm-error {
+  font-size: 12px;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  margin-bottom: 10px;
+}
+
+.btn-llm-generate {
+  width: 100%;
+  padding: 9px 16px;
+  background: var(--accent);
+  color: #0b1610;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.btn-llm-generate:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.btn-llm-generate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+[data-theme='light'] .btn-llm-generate {
+  color: #fff;
+}
+
 /* ─── Footer ─── */
 .footer {
   border-top: 1px solid var(--border);

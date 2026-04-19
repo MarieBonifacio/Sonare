@@ -56,7 +56,7 @@
 - [x] Synchronisation MIDI temps réel (WebMIDI API) — détection + comparaison note active + mode pratique manuel
 - [x] Export de partitions simplifiées (MusicXML)
 - [x] Sauvegarde de la progression (localStorage)
-- [ ] Support multilingue (FR / EN)
+- [x] Support multilingue (FR / EN)
 
 ---
 
@@ -88,9 +88,9 @@ Refonte visuelle du rendu 3D pour représenter la harpe renard de Marin Lhopitea
 
 ---
 
-## v3.0 — Fonctionnalités avancées (suite)
+## v3.0 — Fonctionnalités avancées (suite) ✅ (fait)
 
-- [ ] Génération d'exercices avec intégration LLM optionnelle
+- [x] Génération d'exercices avec intégration LLM optionnelle (Claude via clé API)
 
 ---
 

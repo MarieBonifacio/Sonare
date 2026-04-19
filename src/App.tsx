@@ -21,6 +21,7 @@ import { downloadMusicXml } from './utils/musicxmlExport';
 import { useMidi } from './hooks/useMidi';
 import { pitchToMidi } from './utils/midiMapper';
 import ExercisePanel from './components/ExercisePanel';
+import LlmPanel from './components/LlmPanel';
 import { GeneratedExercise } from './utils/exerciseGenerator';
 import { Lang, T } from './utils/i18n';
 
@@ -48,6 +49,7 @@ function App() {
   const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory());
   const [showHistory, setShowHistory] = useState(false);
   const [showExercises, setShowExercises] = useState(false);
+  const [showLlm, setShowLlm] = useState(false);
   const [midiResult, setMidiResult] = useState<'correct' | 'error' | null>(
     null,
   );
@@ -392,6 +394,13 @@ function App() {
             >
               🎯 {tr.exercises}
             </button>
+            <button
+              className={`btn-history${showLlm ? ' btn-history--active' : ''}`}
+              onClick={() => setShowLlm((l) => !l)}
+              title={tr.llmTitle}
+            >
+              {tr.llmBtn}
+            </button>
             {midiStatus === 'connected' && (
               <span className='midi-badge midi-badge--connected'>
                 🎹 {midiDeviceName}
@@ -427,6 +436,9 @@ function App() {
         )}
         {showExercises && (
           <ExercisePanel onGenerate={handleExerciseGenerate} lang={lang} />
+        )}
+        {showLlm && (
+          <LlmPanel onGenerate={handleExerciseGenerate} lang={lang} />
         )}
       </div>
 
