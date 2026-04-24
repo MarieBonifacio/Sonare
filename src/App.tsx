@@ -77,7 +77,9 @@ function App() {
       jouerNote(note);
       // Durée réelle = (divisions MusicXML / divisions par noire) * ms par noire
       const msParNoire = 60_000 / bpmCourant;
-      const dureeMs = ((note.duration ?? divisionsCourantes) / divisionsCourantes) * msParNoire;
+      const dureeMs =
+        ((note.duration ?? divisionsCourantes) / divisionsCourantes) *
+        msParNoire;
       playbackTimer.current = setTimeout(
         () =>
           jouerDepuis(
