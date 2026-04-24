@@ -6,7 +6,7 @@ import { Note } from 'musicxml-interfaces';
 import HarpModel from './components/HarpModel';
 import ScoreLoader from './components/ScoreLoader';
 import UIControls from './components/UIControls';
-import { getRecommendedFinger } from './utils/noteMapper';
+import { collectChordGroup, getRecommendedFinger } from './utils/noteMapper';
 import { DEFAULT_VOLUME } from './utils/xmlParser';
 import HistoryPanel from './components/HistoryPanel';
 import {
@@ -219,19 +219,7 @@ function App() {
         return;
       }
 
-      // Collecte la note de base + toutes les notes d'accord qui suivent
-      const chordEnd = (() => {
-        let i = index + 1;
-        while (
-          i < partitionCourante.length &&
-          partitionCourante[i].chord !== undefined
-        )
-          i++;
-        return i;
-      })();
-      setActiveNoteIndices(
-        Array.from({ length: chordEnd - index }, (_, k) => index + k),
-      );
+      setActiveNoteIndices(collectChordGroup(partitionCourante, index));
 
       const isTiedStop = note.ties?.some((t) => (t.type as number) === 1);
       if (note.rest === undefined && !isTiedStop) {
