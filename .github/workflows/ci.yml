@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, 'feat-**', 'fix-**']
+    branches: [main, 'feat-**', 'fix-**', 'claude/**']
   pull_request:
     branches: [main]
 
@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Installer les dépendances
@@ -27,6 +27,9 @@ jobs:
 
       - name: Tests unitaires
         run: npm test
+
+      - name: Couverture de code
+        run: npm run coverage -- --coverage.reporter=text-summary
 
       - name: Build de production
         run: npm run build
