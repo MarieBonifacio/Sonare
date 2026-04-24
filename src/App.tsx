@@ -364,7 +364,7 @@ function App() {
         note.pitch.alter ?? 0,
       );
 
-      setActiveNoteIndex(idx);
+      setActiveNoteIndices([idx]);
       practiceTotalRef.current += 1;
       if (midiNote === expected) {
         practiceCorrectRef.current += 1;
