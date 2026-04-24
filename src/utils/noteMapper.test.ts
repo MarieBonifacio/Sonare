@@ -69,6 +69,10 @@ describe('mapPitchToString — 36 cordes C2–C7', () => {
     expect(mapPitchToString({ step: 'C', octave: -1, alter: 0 })).toBe(-1);
   });
 
+  it('retourne -1 pour une octave NaN (valeur non-finie)', () => {
+    expect(mapPitchToString({ step: 'C', octave: NaN, alter: 0 })).toBe(-1);
+  });
+
   it('retourne une valeur dans [0, STRING_COUNT − 1] pour les notes valides', () => {
     const index = mapPitchToString({ step: 'G', octave: 4, alter: 0 });
     expect(index).toBeGreaterThanOrEqual(0);

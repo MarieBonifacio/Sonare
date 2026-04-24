@@ -31,7 +31,9 @@ export const mapPitchToString = (pitch: Pitch): number => {
   if (stepIndex === -1) return -1;
   const index =
     (pitch.octave - LOWEST_OCTAVE) * NOTES_PER_OCT + stepIndex + pitch.alter;
-  return index < 0 || index >= STRING_COUNT ? -1 : index;
+  return !Number.isFinite(index) || index < 0 || index >= STRING_COUNT
+    ? -1
+    : index;
 };
 
 /**
