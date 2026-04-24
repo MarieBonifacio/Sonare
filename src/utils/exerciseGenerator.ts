@@ -201,7 +201,7 @@ export function generateExercise(config: ExerciseConfig): GeneratedExercise {
 
   const notes =
     config.direction === 'montant-descendant'
-      ? [...ascending, ...[...ascending].reverse().slice(1)]
+      ? [...ascending, ...ascending.slice(1).reverse()]
       : ascending;
 
   const title = `${TYPE_LABELS[config.type]} de ${config.key} — ${config.octaves} oct. (${DIFF_LABELS[config.difficulty]})`;
