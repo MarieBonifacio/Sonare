@@ -34,8 +34,29 @@ export default tseslint.config(
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
-      // Les props Three.js (position, args, intensity…) ne sont pas des props HTML standard
-      'react/no-unknown-property': ['error', { ignore: ['position', 'args', 'intensity', 'attach', 'rotation', 'scale', 'castShadow', 'receiveShadow'] }],
+      // Les props Three.js / React Three Fiber ne sont pas des props HTML standard
+      'react/no-unknown-property': [
+        'error',
+        {
+          ignore: [
+            'position',
+            'args',
+            'intensity',
+            'attach',
+            'rotation',
+            'scale',
+            'castShadow',
+            'receiveShadow',
+            'geometry',
+            'quaternion',
+            'roughness',
+            'metalness',
+            'emissive',
+            'emissiveIntensity',
+            'color',
+          ],
+        },
+      ],
       'prettier/prettier': 'error',
       ...prettierConfig.rules,
     },
