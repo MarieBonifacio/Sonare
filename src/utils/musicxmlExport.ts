@@ -1,5 +1,9 @@
 import { Note } from 'musicxml-interfaces';
 
+function escapeXml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function alterToAccidental(alter: number): string {
   if (alter === 1) return '<alter>1</alter>';
   if (alter === -1) return '<alter>-1</alter>';
@@ -75,7 +79,7 @@ export function exportMusicXml(
             `\n        <clef><sign>G</sign><line>2</line></clef>` +
             `\n      </attributes>` +
             `\n      <direction placement="above">` +
-            `\n        <direction-type><words>${title}</words></direction-type>` +
+            `\n        <direction-type><words>${escapeXml(title)}</words></direction-type>` +
             `\n        <sound tempo="${tempo}"/>` +
             `\n      </direction>`
           : '';
@@ -88,7 +92,7 @@ export function exportMusicXml(
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">\n` +
     `<score-partwise version="3.1">\n` +
-    `  <work><work-title>${title}</work-title></work>\n` +
+    `  <work><work-title>${escapeXml(title)}</work-title></work>\n` +
     `  <part-list><score-part id="P1"><part-name>Harpe</part-name></score-part></part-list>\n` +
     `  <part id="P1">\n` +
     measuresXml +
