@@ -9,8 +9,9 @@ export const T = {
     history: 'Historique',
     exercises: 'Exercices',
     noMidi: 'Aucun appareil MIDI',
-    // Notes grid
-    extractedNotes: 'Notes extraites',
+    // Partition / portée
+    extractedNotes: 'Partition',
+    noNotes: 'Chargez une partition MusicXML pour visualiser les notes.',
     fingeringBtn: '✋ Doigté',
     hideFingering: 'Masquer le doigté',
     showFingering: 'Afficher le doigté',
@@ -72,7 +73,8 @@ export const T = {
     history: 'History',
     exercises: 'Exercises',
     noMidi: 'No MIDI device',
-    extractedNotes: 'Extracted notes',
+    extractedNotes: 'Score',
+    noNotes: 'Load a MusicXML score to visualize the notes.',
     fingeringBtn: '✋ Fingering',
     hideFingering: 'Hide fingering',
     showFingering: 'Show fingering',

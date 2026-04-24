@@ -25,6 +25,37 @@ import LlmPanel from './components/LlmPanel';
 import { GeneratedExercise } from './utils/exerciseGenerator';
 import { Lang, STEP_FR, T } from './utils/i18n';
 
+const HARP_BASE_URL =
+  'https://gleitz.github.io/midi-js-soundfonts/MusyngKite/orchestral_harp-mp3/';
+const HARP_URLS: Record<string, string> = {
+  A0: 'A0.mp3',
+  C1: 'C1.mp3',
+  'D#1': 'Ds1.mp3',
+  'F#1': 'Fs1.mp3',
+  A1: 'A1.mp3',
+  C2: 'C2.mp3',
+  'D#2': 'Ds2.mp3',
+  'F#2': 'Fs2.mp3',
+  A2: 'A2.mp3',
+  C3: 'C3.mp3',
+  'D#3': 'Ds3.mp3',
+  'F#3': 'Fs3.mp3',
+  A3: 'A3.mp3',
+  C4: 'C4.mp3',
+  'D#4': 'Ds4.mp3',
+  'F#4': 'Fs4.mp3',
+  A4: 'A4.mp3',
+  C5: 'C5.mp3',
+  'D#5': 'Ds5.mp3',
+  'F#5': 'Fs5.mp3',
+  A5: 'A5.mp3',
+  C6: 'C6.mp3',
+  'D#6': 'Ds6.mp3',
+  'F#6': 'Fs6.mp3',
+  A6: 'A6.mp3',
+  C7: 'C7.mp3',
+};
+
 // Type minimal pour ne pas importer Tone.js au chargement initial
 type PolySynthInstance = {
   triggerAttackRelease: (
@@ -71,8 +102,8 @@ function App() {
   const isPlayingRef = useRef(false);
   const loopRef = useRef(false);
   const synthRef = useRef<PolySynthInstance | null>(null);
-  const activeNoteRef = useRef<HTMLDivElement | null>(null);
   const activeNoteIndexRef = useRef<number | null>(null);
+  const activeNoteRef = useRef<HTMLDivElement | null>(null);
   const practiceIndexRef = useRef(0);
 
   useEffect(() => {
@@ -122,12 +153,13 @@ function App() {
     });
   }, [activeNoteIndices]);
 
-  // Chargement paresseux de Tone.js : n'est importé qu'au premier clic sur Lecture
+  // Chargement paresseux de Tone.js + échantillons harpe (fallback PluckSynth si hors-ligne)
   const getSynth = async (): Promise<PolySynthInstance> => {
     if (!synthRef.current) {
       const Tone = await import('tone');
       await Tone.start();
-      // Pool de 8 PluckSynth (Karplus-Strong) pour la polyphonie
+
+      // PluckSynth pool — actif dès le départ en fallback
       const pool = Array.from({ length: 8 }, () =>
         new Tone.PluckSynth({
           attackNoise: 1,
@@ -136,13 +168,31 @@ function App() {
         }).toDestination(),
       );
       let poolIndex = 0;
+      const samplerReady = { value: false };
+
+      // Sampler avec échantillons harpe réels chargés en arrière-plan
+      const sampler = new Tone.Sampler({
+        urls: HARP_URLS,
+        baseUrl: HARP_BASE_URL,
+        onload: () => {
+          samplerReady.value = true;
+        },
+      }).toDestination();
+
       synthRef.current = {
         triggerAttackRelease: (note, _duration, velocity) => {
-          const synth = pool[poolIndex];
-          poolIndex = (poolIndex + 1) % pool.length;
-          synth.triggerAttackRelease(note, '8n', undefined, velocity);
+          if (samplerReady.value) {
+            sampler.triggerAttackRelease(note, '2n', undefined, velocity);
+          } else {
+            const synth = pool[poolIndex];
+            poolIndex = (poolIndex + 1) % pool.length;
+            synth.triggerAttackRelease(note, '8n', undefined, velocity);
+          }
         },
-        dispose: () => pool.forEach((s) => s.dispose()),
+        dispose: () => {
+          sampler.dispose();
+          pool.forEach((s) => s.dispose());
+        },
       };
     }
     return synthRef.current!;
@@ -453,7 +503,7 @@ function App() {
       </div>
 
       <div className='content'>
-        {/* Liste des notes extraites */}
+        {/* Partition — affichage portée musicale */}
         <div className='notes-container card'>
           <div className='notes-header'>
             <h4>{tr.extractedNotes}</h4>
