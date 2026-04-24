@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  collectChordGroup,
   getRecommendedFinger,
   mapPitchToString,
   STRING_COUNT,
@@ -107,5 +108,32 @@ describe('getRecommendedFinger', () => {
   it('retourne null pour un step inconnu', () => {
     expect(getRecommendedFinger('X')).toBeNull();
     expect(getRecommendedFinger('')).toBeNull();
+  });
+});
+
+describe('collectChordGroup', () => {
+  const n = (chord?: true) => ({ chord: chord ? {} : undefined });
+
+  it('note isolée → [0]', () => {
+    expect(collectChordGroup([n(), n(), n()], 0)).toEqual([0]);
+  });
+
+  it('accord de 3 notes → [1, 2, 3]', () => {
+    const notes = [n(), n(), n(true), n(true), n()];
+    expect(collectChordGroup(notes, 1)).toEqual([1, 2, 3]);
+  });
+
+  it("accord en fin de tableau → collecte jusqu'au bout", () => {
+    const notes = [n(), n(true), n(true)];
+    expect(collectChordGroup(notes, 0)).toEqual([0, 1, 2]);
+  });
+
+  it('note seule en fin de tableau → [dernierIndex]', () => {
+    const notes = [n(), n(), n()];
+    expect(collectChordGroup(notes, 2)).toEqual([2]);
+  });
+
+  it('tableau vide → [0] (baseIdx hors limite, pas de boucle)', () => {
+    expect(collectChordGroup([], 0)).toEqual([0]);
   });
 });

@@ -37,6 +37,24 @@ export const mapPitchToString = (pitch: Pitch): number => {
 };
 
 /**
+ * Retourne les indices (dans le tableau notes[]) de toutes les notes formant
+ * l'accord à partir de baseIdx : la note de base + toutes les notes suivantes
+ * marquées chord !== undefined.
+ */
+export const collectChordGroup = <T extends { chord?: unknown }>(
+  notes: T[],
+  baseIdx: number,
+): number[] => {
+  const result = [baseIdx];
+  let i = baseIdx + 1;
+  while (i < notes.length && notes[i].chord !== undefined) {
+    result.push(i);
+    i++;
+  }
+  return result;
+};
+
+/**
  * Retourne le doigt recommandé pour une note (1 = pouce … 4 = annulaire).
  * Utilisé pour l'affichage pédagogique du doigté.
  */
