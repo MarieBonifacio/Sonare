@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Sonare is a React + TypeScript web application that parses MusicXML music scores and visualizes them on an interactive 3D harp model. Users upload a `.musicxml`, `.xml`, or `.mxl` file; the app extracts notes and highlights the corresponding strings on a 3D rendered harp.
+Sonare is a React + TypeScript web application that parses MusicXML music scores and visualizes them on an interactive 3D harp model. Users upload a `.musicxml`, `.xml`, or `.mxl` file; the app extracts notes and highlights the corresponding strings on a 3D rendered harp while playing audio via Tone.js.
 
 ---
 
@@ -16,11 +16,12 @@ Sonare is a React + TypeScript web application that parses MusicXML music scores
 | Three.js | 0.171 | 3D rendering |
 | @react-three/fiber | 8.17 | React renderer for Three.js |
 | @react-three/drei | 9.120 | Three.js helpers (OrbitControls, etc.) |
-| tone.js | 15.0 | Web Audio API (imported, not yet wired up) |
-| @tonejs/midi | 2.0 | MIDI parsing (imported, not yet wired up) |
+| Tone.js | 15.0 | Web Audio API — PolySynth triangle oscillator |
+| @tonejs/midi | 2.0 | MIDI parsing (installed, not yet wired up) |
 | JSZip | 3.10 | Decompresses `.mxl` (ZIP) files |
-| xmldom | 0.6 | DOM-based XML parser (browser-compatible) |
+| @xmldom/xmldom | 0.9.6 | DOM-based XML parser (browser-compatible) |
 | musicxml-interfaces | 0.0.21 | TypeScript types for MusicXML notes |
+| Vitest | 2.x | Unit test runner |
 | ESLint | 9.17 | Linting (flat config format) |
 | Prettier | 3.4 | Code formatting |
 
@@ -40,15 +41,22 @@ Sonare/
 ├── package.json                # Dependencies and scripts
 ├── src/
 │   ├── main.tsx                # React 18 entry — mounts <App> into #root
-│   ├── App.tsx                 # Root component — state + layout
+│   ├── App.tsx                 # Root component — state + layout + audio engine
 │   ├── styles.css              # Global styles (Roboto, emerald green theme)
 │   ├── vite-env.d.ts           # Vite type shims
 │   ├── assets/
 │   │   └── react.svg
-│   └── components/
-│       ├── HarpModel.tsx       # 3D harp string renderer (react-three/fiber)
-│       ├── ScoreLoader.tsx     # MusicXML file upload + parser
-│       └── UIControls.tsx      # Stub — currently empty
+│   ├── components/
+│   │   ├── HarpModel.tsx       # 3D harp string renderer (react-three/fiber)
+│   │   ├── ScoreLoader.tsx     # MusicXML file upload + parser
+│   │   ├── ScoreLoader.test.tsx
+│   │   ├── UIControls.tsx      # Play/Stop button + Tempo slider
+│   │   └── UIControls.test.tsx
+│   └── utils/
+│       ├── noteMapper.ts       # Pitch → string index (0–36) mapping
+│       ├── noteMapper.test.ts
+│       ├── xmlParser.ts        # MusicXML note extraction
+│       └── xmlParser.test.ts
 └── public/
     ├── models/harp/            # GLTF harp model + textures (Unity2Skfb.gltf/.bin)
     └── scores/
@@ -64,9 +72,10 @@ npm run dev       # Start Vite dev server (hot reload)
 npm run build     # Type-check then Vite production build
 npm run lint      # Run ESLint across all files
 npm run preview   # Serve the production build locally
+npm test          # Run unit tests once (Vitest)
+npm run test:watch  # Run tests in watch mode
+npm run coverage  # Generate HTML coverage report
 ```
-
-No test suite exists yet.
 
 ---
 
@@ -79,13 +88,14 @@ User uploads file
 ScoreLoader.tsx
   ├── Reads ArrayBuffer via FileReader
   ├── If .mxl → JSZip decompresses → extracts score.xml
-  ├── DOMParser (xmldom) parses XML
-  └── Emits Note[] via onLoad callback
+  ├── DOMParser (@xmldom/xmldom) parses XML
+  └── Emits Note[] + divisions via onLoad callback
       │
       ▼
-App.tsx  (notes state: Note[])
-  ├── Renders note cards in .notes-container grid
-  └── Passes notes[] to HarpModel
+App.tsx  (notes: Note[], divisions, activeNoteIndex, isPlaying, tempo)
+  ├── Renders note cards in .notes-container grid (scroll-synced to active)
+  ├── Passes notes[] + activeNoteIndex to HarpModel
+  └── UIControls triggers play/stop → jouerDepuis() recursive timer loop
           │
           ▼
       HarpModel.tsx
@@ -93,34 +103,74 @@ App.tsx  (notes state: Note[])
         └── Renders 37 cylinder meshes; active string highlighted yellow
 ```
 
+### Audio engine (`App.tsx`)
+
+Tone.js is loaded eagerly. `getSynth()` lazily initialises a `PolySynth` (triangle oscillator) on first play. `jouerDepuis()` is a recursive `setTimeout` loop that honours real MusicXML note durations (converted from `divisions` units to milliseconds at the current BPM).
+
 ---
 
 ## Component Reference
 
 ### `App.tsx`
-- Root component holding `notes` state (`useState<any[]>`)
+- Root component holding `notes: Note[]`, `divisions`, `activeNoteIndex`, `isPlaying`, `tempo` state
 - Layout: `.header` (ScoreLoader) | `.content` (notes grid + Canvas) | `.footer`
-- Passes `notes` down to `<HarpModel useManualStrings={true} notes={notes} />`
+- `getSynth()` — lazy singleton `Tone.PolySynth` (triangle oscillator)
+- `jouerNote(note)` — plays one pitch via the synth; silently ignores out-of-range notes
+- `jouerDepuis(index, notes, bpm, divisions)` — recursive playback loop with real durations
+- Passes `notes` and `activeNoteIndex` to `<HarpModel>` and `<UIControls>`
 - Camera positioned at `[0, 0, 20]` with `fov: 75`
 
 ### `ScoreLoader.tsx`
-- Props: `{ onLoad: (notes: Note[]) => void }`
+- Props: `{ onLoad: (notes: Note[], divisions: number) => void }`
 - Accepts `.musicxml`, `.xml`, `.mxl` via hidden `<input type="file">`
 - MXL decompression looks specifically for `score.xml` inside the ZIP
-- Uses `xmldom`'s `DOMParser` (not the browser native one) for XML parsing
+- Uses `@xmldom/xmldom`'s `DOMParser` (not the browser native one) for XML parsing
 - Extracts per-note: `step` (C–B), `octave` (int), `duration` (int), `alter` (int, default 0)
 
-### `HarpModel.tsx` (exported as `HarpStringModel`)
-- Props: `{ useManualStrings?: boolean; notes: any[] }`
-- `mapPitchToString(pitch)` → `stepIndex + octave * 7 + alter`, clamped to 0–36
-- `useEffect` on `notes` sets `activeString` to the first note's mapped string index
+### `HarpModel.tsx`
+- Props: `{ notes: Note[]; activeNoteIndex: number | null }`
+- Delegates pitch→string mapping to `noteMapper.ts::mapPitchToString()`
 - 37 `<mesh>` cylinders; spacing: `zPosition = index * 0.5 - (37 * 0.5) / 2`
 - String length increases with index: `1 + index * 0.5` (range 1–18.5 units)
 - Click on a string sets `activeString` manually
 - Active string: `yellow`; others: `hsl(index * 10, 100%, 50%)`
 
 ### `UIControls.tsx`
-- Currently an empty file — no exports or logic yet
+- Props: `{ isPlaying, tempo, onPlay, onStop, onTempoChange, disabled }`
+- Single toggle button: `▶ Lecture` when stopped, `⏹ Arrêter` when playing
+- Tempo slider: 40–240 BPM (disabled during playback)
+
+---
+
+## Utils Reference
+
+### `noteMapper.ts`
+- `mapPitchToString(pitch: Pitch): number` — returns 0–36 or -1 if out of range
+- Formula: `stepIndex + octave * 7 + alter`, clamped to `[0, STRING_COUNT)`
+- `STRING_COUNT = 37`; `NOTE_ORDER = ['C','D','E','F','G','A','B']`
+
+### `xmlParser.ts`
+- Parses a raw XML string using `@xmldom/xmldom`
+- Returns `{ notes: Note[]; divisions: number }`
+- Handles `.mxl` decompression upstream (in `ScoreLoader`)
+
+---
+
+## Tests
+
+```bash
+npm test          # Run all tests once
+npm run coverage  # HTML coverage report (opens in browser)
+```
+
+Current test suite: **34 tests across 4 files**
+
+| File | Tests |
+|---|---|
+| `utils/noteMapper.test.ts` | 11 — pitch→string mapping, edge cases |
+| `utils/xmlParser.test.ts` | 11 — XML/MXL parsing, error handling |
+| `components/ScoreLoader.test.tsx` | 4 — file upload, invalid input |
+| `components/UIControls.test.tsx` | 8 — play/stop/tempo interactions |
 
 ---
 
@@ -133,7 +183,7 @@ App.tsx  (notes state: Note[])
 ### TypeScript
 - Strict mode is on (`strict: true` in tsconfig.app.json)
 - `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch` are enabled
-- **Known issue**: `App.tsx` uses `any[]` for notes instead of `Note[]` — prefer fixing when touching that file
+- All state is properly typed: `notes` is `Note[]` from `musicxml-interfaces`
 
 ### Formatting (Prettier)
 - Semicolons: `true`
@@ -170,7 +220,6 @@ Commit message style: conventional commits prefix
 feat: <description>
 fix: <description>
 ```
-Recent examples: `feat: implement MusicXML parsing and note handling`, `fix-css-and-start-mapping`
 
 ---
 
@@ -178,25 +227,31 @@ Recent examples: `feat: implement MusicXML parsing and note handling`, `fix-css-
 
 | Area | Issue |
 |---|---|
-| `App.tsx:10` | `notes` typed as `any[]` — should be `Note[]` from `musicxml-interfaces` |
-| `UIControls.tsx` | Empty stub, needs implementation |
-| Audio | `tone` and `@tonejs/midi` installed but not used anywhere |
-| Tests | No test suite exists (no Vitest, Jest, or similar) |
+| GLTF model | `public/models/harp/Unity2Skfb.gltf` is loaded but `HarpModel` uses procedural cylinders, not the GLTF mesh |
+| Audio polyphony | `jouerDepuis` plays one note at a time; chord notes (`<chord/>`) are not yet handled |
+| Tied notes | `<tie type="stop"/>` is not yet parsed; tied notes are re-attacked instead of held |
+| @tonejs/midi | Installed but not yet used anywhere |
 | CI/CD | No `.github/workflows` — no automated checks on push |
-| GLTF model | `public/models/harp/Unity2Skfb.gltf` is loaded but `HarpModel` uses procedural cylinders, not the GLTF model |
-| Note playback | Only the first note is highlighted; sequential playback is not implemented |
+| String range | 37 strings cover C0–G5; real concert harps have 47 strings (C1–G7) |
 
 ---
 
 ## Key Algorithms
 
-### Note-to-string mapping (`HarpModel.tsx:9-17`)
+### Note-to-string mapping (`utils/noteMapper.ts`)
 ```ts
-const notesOrder = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+const NOTE_ORDER = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 const stringIndex = stepIndex + pitch.octave * 7 + pitch.alter;
-// Valid range: 0–36 (37 strings total)
+// Valid range: 0–36 (37 strings total); returns -1 if out of range
 ```
-This maps diatonic notes linearly: C4 = 4*7 = 28, D4 = 29, … with `alter` (±1) for accidentals.
+This maps diatonic notes linearly: C4 → 4×7=28, D4 → 29, … with `alter` (±1) for accidentals.
 
-### MXL decompression (`ScoreLoader.tsx:41-53`)
+### MXL decompression (`ScoreLoader.tsx`)
 JSZip opens the ZIP archive and looks for exactly `score.xml` by filename. Other XML files inside the archive are ignored.
+
+### Playback timing (`App.tsx — jouerDepuis`)
+```
+msPerBeat = 60_000 / bpm
+noteMs   = (note.duration / divisions) * msPerBeat
+```
+`divisions` is the number of MusicXML ticks per quarter note, read directly from `<divisions>` in the score.
