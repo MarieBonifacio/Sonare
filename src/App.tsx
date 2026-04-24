@@ -23,7 +23,7 @@ import { pitchToMidi } from './utils/midiMapper';
 import ExercisePanel from './components/ExercisePanel';
 import LlmPanel from './components/LlmPanel';
 import { GeneratedExercise } from './utils/exerciseGenerator';
-import { Lang, T } from './utils/i18n';
+import { Lang, STEP_FR, T } from './utils/i18n';
 
 // Type minimal pour ne pas importer Tone.js au chargement initial
 type PolySynthInstance = {
@@ -263,6 +263,16 @@ function App() {
     if (playbackTimer.current) clearTimeout(playbackTimer.current);
   }, []);
 
+  const handleNoteClick = useCallback(
+    (index: number) => {
+      if (playbackTimer.current) clearTimeout(playbackTimer.current);
+      isPlayingRef.current = true;
+      setIsPlaying(true);
+      jouerDepuis(index, notes, tempo, divisions, volumes);
+    },
+    [notes, tempo, divisions, volumes, jouerDepuis],
+  );
+
   const handleLoopToggle = useCallback(() => {
     setIsLooping((prev) => {
       loopRef.current = !prev;
@@ -463,6 +473,8 @@ function App() {
                 key={index}
                 ref={activeNoteIndex === index ? activeNoteRef : null}
                 className={`note-card${activeNoteIndex === index ? ' note-card--active' : ''}${activeNoteIndex === index && midiResult === 'correct' ? ' note-card--correct' : ''}${activeNoteIndex === index && midiResult === 'error' ? ' note-card--error' : ''}`}
+                onClick={() => handleNoteClick(index)}
+                style={{ cursor: 'pointer' }}
               >
                 {note.rest !== undefined ? (
                   <>
@@ -476,7 +488,10 @@ function App() {
                 ) : (
                   <>
                     <p>
-                      <strong>{tr.noteLabel} :</strong> {note.pitch?.step}
+                      <strong>{tr.noteLabel} :</strong>{' '}
+                      {lang === 'fr'
+                        ? (STEP_FR[note.pitch?.step ?? ''] ?? note.pitch?.step)
+                        : note.pitch?.step}
                       {(note.pitch?.alter ?? 0) > 0
                         ? '♯'
                         : (note.pitch?.alter ?? 0) < 0
@@ -510,6 +525,7 @@ function App() {
             onStop={handleStop}
             onLoopToggle={handleLoopToggle}
             onTempoChange={setBpm}
+            onSeek={handleNoteClick}
             disabled={notes.length === 0}
             currentNoteIndex={activeNoteIndex}
             totalNotes={notes.length}

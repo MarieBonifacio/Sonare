@@ -9,6 +9,7 @@ interface UIControlsProps {
   onStop: () => void;
   onLoopToggle: () => void;
   onTempoChange: (bpm: number) => void;
+  onSeek: (index: number) => void;
   disabled: boolean;
   currentNoteIndex: number | null;
   totalNotes: number;
@@ -23,6 +24,7 @@ const UIControls: React.FC<UIControlsProps> = ({
   onStop,
   onLoopToggle,
   onTempoChange,
+  onSeek,
   disabled,
   currentNoteIndex,
   totalNotes,
@@ -65,6 +67,12 @@ const UIControls: React.FC<UIControlsProps> = ({
           aria-valuenow={Math.round(progress)}
           aria-valuemin={0}
           aria-valuemax={100}
+          style={{ cursor: 'pointer' }}
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const ratio = (e.clientX - rect.left) / rect.width;
+            onSeek(Math.floor(ratio * totalNotes));
+          }}
         >
           <div
             className='progress-bar__fill'

@@ -127,3 +127,13 @@ export const T = {
 } as const satisfies Record<Lang, Record<string, string>>;
 
 export type Translations = (typeof T)['fr'];
+
+export const STEP_FR: Record<string, string> = {
+  C: 'Do',
+  D: 'Ré',
+  E: 'Mi',
+  F: 'Fa',
+  G: 'Sol',
+  A: 'La',
+  B: 'Si',
+};

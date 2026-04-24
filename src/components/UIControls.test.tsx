@@ -12,6 +12,7 @@ const defaultProps = {
   onStop: vi.fn(),
   onLoopToggle: vi.fn(),
   onTempoChange: vi.fn(),
+  onSeek: vi.fn(),
   disabled: false,
   currentNoteIndex: null,
   totalNotes: 0,
