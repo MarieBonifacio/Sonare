@@ -105,24 +105,28 @@ function stringRadius(i: number): number {
 
 interface HarpModelProps {
   notes: Note[];
-  activeNoteIndex: number | null;
+  activeNoteIndices: number[];
 }
 
 const HarpStringModel: React.FC<HarpModelProps> = ({
   notes,
-  activeNoteIndex,
+  activeNoteIndices,
 }) => {
-  // Index visuel de la corde active (0–35)
-  const activeVisual = useMemo(() => {
-    if (activeNoteIndex === null || !notes[activeNoteIndex]?.pitch) return null;
-    const p = notes[activeNoteIndex].pitch!;
-    const idx = mapPitchToString({
-      step: p.step ?? '',
-      octave: p.octave,
-      alter: p.alter ?? 0,
-    });
-    return idx >= 0 ? idx : null;
-  }, [notes, activeNoteIndex]);
+  // Ensemble des indices visuels de cordes actives (0–35) — supporte les accords
+  const activeVisualSet = useMemo(() => {
+    const set = new Set<number>();
+    for (const noteIdx of activeNoteIndices) {
+      const p = notes[noteIdx]?.pitch;
+      if (!p) continue;
+      const idx = mapPitchToString({
+        step: p.step ?? '',
+        octave: p.octave,
+        alter: p.alter ?? 0,
+      });
+      if (idx >= 0) set.add(idx);
+    }
+    return set;
+  }, [notes, activeNoteIndices]);
 
   // Géométries mémoïsées (tube pilier et tube console)
   const pillarGeo = useMemo(
@@ -206,11 +210,11 @@ const HarpStringModel: React.FC<HarpModelProps> = ({
         <mesh key={index} position={position} quaternion={quaternion}>
           <cylinderGeometry args={[radius, radius, length, 5]} />
           <meshStandardMaterial
-            color={stringColor(index, activeVisual === index)}
+            color={stringColor(index, activeVisualSet.has(index))}
             roughness={0.12}
             metalness={0.88}
-            emissive={activeVisual === index ? STRING_ACTIVE : '#000000'}
-            emissiveIntensity={activeVisual === index ? 0.6 : 0}
+            emissive={activeVisualSet.has(index) ? STRING_ACTIVE : '#000000'}
+            emissiveIntensity={activeVisualSet.has(index) ? 0.6 : 0}
           />
         </mesh>
       ))}

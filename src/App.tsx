@@ -40,7 +40,7 @@ function App() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [divisions, setDivisions] = useState(1);
   const [volumes, setVolumes] = useState<number[]>([]);
-  const [activeNoteIndex, setActiveNoteIndex] = useState<number | null>(null);
+  const [activeNoteIndices, setActiveNoteIndices] = useState<number[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
   const [tempo, setBpm] = useState(120);
@@ -92,10 +92,10 @@ function App() {
     };
   }, []);
 
-  // Garde activeNoteIndexRef synchronisé pour usage dans les callbacks stables
+  // Garde activeNoteIndexRef synchronisé (premier index de l'accord) pour MIDI
   useEffect(() => {
-    activeNoteIndexRef.current = activeNoteIndex;
-  }, [activeNoteIndex]);
+    activeNoteIndexRef.current = activeNoteIndices[0] ?? null;
+  }, [activeNoteIndices]);
 
   // Réinitialise le curseur de pratique quand une nouvelle partition est chargée
   useEffect(() => {
@@ -114,13 +114,13 @@ function App() {
     setMidiResult(null);
   }, [notes]);
 
-  // Scroll automatique vers la note active
+  // Scroll automatique vers la note active (première note de l'accord)
   useEffect(() => {
     activeNoteRef.current?.scrollIntoView({
       behavior: 'smooth',
       block: 'nearest',
     });
-  }, [activeNoteIndex]);
+  }, [activeNoteIndices]);
 
   // Chargement paresseux de Tone.js : n'est importé qu'au premier clic sur Lecture
   const getSynth = async (): Promise<PolySynthInstance> => {
@@ -171,7 +171,7 @@ function App() {
     ) => {
       if (!isPlayingRef.current) {
         setIsPlaying(false);
-        setActiveNoteIndex(null);
+        setActiveNoteIndices([]);
         return;
       }
 
@@ -193,7 +193,7 @@ function App() {
         }
         isPlayingRef.current = false;
         setIsPlaying(false);
-        setActiveNoteIndex(null);
+        setActiveNoteIndices([]);
         return;
       }
 
@@ -219,7 +219,19 @@ function App() {
         return;
       }
 
-      setActiveNoteIndex(index);
+      // Collecte la note de base + toutes les notes d'accord qui suivent
+      const chordEnd = (() => {
+        let i = index + 1;
+        while (
+          i < partitionCourante.length &&
+          partitionCourante[i].chord !== undefined
+        )
+          i++;
+        return i;
+      })();
+      setActiveNoteIndices(
+        Array.from({ length: chordEnd - index }, (_, k) => index + k),
+      );
 
       const isTiedStop = note.ties?.some((t) => (t.type as number) === 1);
       if (note.rest === undefined && !isTiedStop) {
@@ -259,7 +271,7 @@ function App() {
   const handleStop = useCallback(() => {
     isPlayingRef.current = false;
     setIsPlaying(false);
-    setActiveNoteIndex(null);
+    setActiveNoteIndices([]);
     if (playbackTimer.current) clearTimeout(playbackTimer.current);
   }, []);
 
@@ -471,8 +483,8 @@ function App() {
             {notes.map((note, index) => (
               <div
                 key={index}
-                ref={activeNoteIndex === index ? activeNoteRef : null}
-                className={`note-card${activeNoteIndex === index ? ' note-card--active' : ''}${activeNoteIndex === index && midiResult === 'correct' ? ' note-card--correct' : ''}${activeNoteIndex === index && midiResult === 'error' ? ' note-card--error' : ''}`}
+                ref={activeNoteIndices[0] === index ? activeNoteRef : null}
+                className={`note-card${activeNoteIndices.includes(index) ? ' note-card--active' : ''}${activeNoteIndices[0] === index && midiResult === 'correct' ? ' note-card--correct' : ''}${activeNoteIndices[0] === index && midiResult === 'error' ? ' note-card--error' : ''}`}
                 onClick={() => handleNoteClick(index)}
                 style={{ cursor: 'pointer' }}
               >
@@ -527,7 +539,7 @@ function App() {
             onTempoChange={setBpm}
             onSeek={handleNoteClick}
             disabled={notes.length === 0}
-            currentNoteIndex={activeNoteIndex}
+            currentNoteIndex={activeNoteIndices[0] ?? null}
             totalNotes={notes.length}
             lang={lang}
           />
@@ -547,7 +559,7 @@ function App() {
             <directionalLight position={[10, 10, 5]} intensity={1} />
             <pointLight position={[10, 10, 10]} />
             <Suspense fallback={null}>
-              <HarpModel notes={notes} activeNoteIndex={activeNoteIndex} />
+              <HarpModel notes={notes} activeNoteIndices={activeNoteIndices} />
             </Suspense>
             <OrbitControls />
           </Canvas>
