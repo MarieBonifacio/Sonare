@@ -160,25 +160,43 @@ function App() {
       const Tone = await import('tone');
       await Tone.start();
 
-      // PluckSynth pool — actif dès le départ en fallback
+      // Réverbération naturelle (salle légère) — commune à tous les synthés
+      const reverb = new Tone.Reverb({
+        decay: 2.2,
+        wet: 0.28,
+        preDelay: 0.01,
+      }).toDestination();
+      await reverb.generate();
+
+      // Filtre passe-bas pour adoucir la brillance excessive
+      const warmth = new Tone.Filter({
+        frequency: 3800,
+        type: 'lowpass',
+        rolloff: -12,
+      }).connect(reverb);
+
+      // PluckSynth pool — actif immédiatement en fallback si le Sampler n'est pas prêt
+      // attackNoise 0.3 (vs 1) : attaque douce, sans cliquetis
+      // dampening 2600 (vs 4000) : timbre plus chaud, moins métallique
+      // resonance 0.93 (vs 0.98) : decay naturel, sans bourdonnement
       const pool = Array.from({ length: 8 }, () =>
         new Tone.PluckSynth({
-          attackNoise: 1,
-          dampening: 4000,
-          resonance: 0.98,
-        }).toDestination(),
+          attackNoise: 0.3,
+          dampening: 2600,
+          resonance: 0.93,
+        }).connect(warmth),
       );
       let poolIndex = 0;
       const samplerReady = { value: false };
 
-      // Sampler avec échantillons harpe réels chargés en arrière-plan
+      // Sampler avec échantillons harpe orchestrale réels — chargés en arrière-plan
       const sampler = new Tone.Sampler({
         urls: HARP_URLS,
         baseUrl: HARP_BASE_URL,
         onload: () => {
           samplerReady.value = true;
         },
-      }).toDestination();
+      }).connect(warmth);
 
       synthRef.current = {
         triggerAttackRelease: (note, _duration, velocity) => {
@@ -187,12 +205,14 @@ function App() {
           } else {
             const synth = pool[poolIndex];
             poolIndex = (poolIndex + 1) % pool.length;
-            synth.triggerAttackRelease(note, '8n', undefined, velocity);
+            synth.triggerAttackRelease(note, '4n', undefined, velocity);
           }
         },
         dispose: () => {
           sampler.dispose();
           pool.forEach((s) => s.dispose());
+          warmth.dispose();
+          reverb.dispose();
         },
       };
     }
