@@ -6,55 +6,54 @@ import { HARP_STRING_BY_MODEL } from '../utils/harpTuning';
 
 // ── Palette ──────────────────────────────────────────────────────────────────
 
-const WOOD_LIGHT = '#C5893C'; // chêne/cerisier clair
-const WOOD_DARK = '#8A5828'; // corps/table foncé
+const WOOD_LIGHT = '#C8904A'; // cerisier clair — corps principal
+const WOOD_MID = '#A06828'; // cerisier mi-ton — table d'harmonie
+const WOOD_DARK = '#6E3F10'; // cerisier foncé — nez, détails sculptés
 const STRING_C = '#E03030'; // cordes Do — rouge vif (repère harpiste)
 const STRING_F = '#3A3AB0'; // cordes Fa — bleu nuit visible sur fond sombre
 const STRING_NATURAL = '#D8CFA8'; // cordes diatoniques — ivoire chaud
 const STRING_ACTIVE = '#FFE45A'; // corde en cours de jeu
-const PIN_COLOR = '#B8B8B8'; // chevilles métalliques
+const PIN_COLOR = '#C0B060'; // chevilles — laiton doré
 
 // ── Géométrie structurelle ────────────────────────────────────────────────────
 //
-// Système de coordonnées (local, avant décalage du groupe) :
-//   X+ → vers la table d'harmonie (droite)
+// Repère local (avant décalage du groupe) :
+//   X+ → vers la table d'harmonie (droite), X- → vers le pilier (gauche)
 //   Y+ → vers le haut
 //   Z+ → vers le spectateur
 //
-// Pilier : tube organique, bas gauche → haut gauche, légère courbure vers l'avant
-// Console (cou) : arche prononcée depuis le sommet du pilier jusqu'à la tête de renard
-// Table d'harmonie : face droite, cordes fixées sur sa face avant (z ≈ +0.29)
-// Cordes : de neckPoint(i) (console) à boardPoint(i) (table), angle décroissant
+// Le pilier et la console sont des planches plates (scale Z ≈ 0.20) :
+//   - De face (vue joueur) on voit la face large de la planche
+//   - De côté on voit le chant fin, comme sur une vraie harpe sculptée
+//
+// La tête de renard est à l'extrémité de la console, face orientée vers -X
+// (le renard "regarde" les cordes, vers le joueur).
 
 const PILLAR_CURVE = new THREE.CatmullRomCurve3([
   new THREE.Vector3(-1.5, -5.7, 0),
-  new THREE.Vector3(-1.9, -3.0, 0.14),
-  new THREE.Vector3(-1.65, 0.0, 0.08),
-  new THREE.Vector3(-1.1, 2.8, 0),
+  new THREE.Vector3(-1.85, -2.8, 0),
+  new THREE.Vector3(-1.6, 0.2, 0),
+  new THREE.Vector3(-1.1, 3.0, 0),
   new THREE.Vector3(-0.4, 4.6, 0),
 ]);
 
-// Arche nettement relevée : sommet du pilier (-0.4, 4.6) → tête de renard (4.6, 6.1).
-// Le pic de l'arche est à environ y=7.8, bien au-dessus du sommet de la table (y≈5.4).
+// Arche douce : sommet du pilier → tête de renard.
+// Pic à y≈8.0, légèrement au-delà du haut de la table (y≈5.3).
 const NECK_CURVE = new THREE.CatmullRomCurve3([
   new THREE.Vector3(-0.4, 4.6, 0),
-  new THREE.Vector3(0.8, 7.1, 0),
-  new THREE.Vector3(2.5, 7.9, 0),
-  new THREE.Vector3(3.7, 7.5, 0),
-  new THREE.Vector3(4.6, 6.1, 0),
+  new THREE.Vector3(0.9, 7.3, 0),
+  new THREE.Vector3(2.6, 8.0, 0),
+  new THREE.Vector3(3.8, 7.6, 0),
+  new THREE.Vector3(4.7, 6.0, 0),
 ]);
 
-const VISUAL_STRINGS = 36; // harpe celtique folk
+const VISUAL_STRINGS = 36;
 
-// Point d'attache de la corde i sur la console.
-// i=0 → corde basse (proche du pilier), i=35 → corde aiguë (proche du renard).
 function neckPoint(i: number): THREE.Vector3 {
   const t = 0.06 + (i / (VISUAL_STRINGS - 1)) * 0.83;
   return NECK_CURVE.getPoint(t);
 }
 
-// Point d'attache de la corde i sur la face avant de la table d'harmonie.
-// y=-5.0 (basse) → y=4.5 (aiguë) ; x légèrement décroissant vers la table (réaliste).
 function boardPoint(i: number): THREE.Vector3 {
   const t = i / (VISUAL_STRINGS - 1);
   const y = -5.0 + t * 9.5;
@@ -62,7 +61,6 @@ function boardPoint(i: number): THREE.Vector3 {
   return new THREE.Vector3(x, y, 0.29);
 }
 
-// Construit position/quaternion pour un cylindre allant du point A au point B.
 function cylinderBetween(
   a: THREE.Vector3,
   b: THREE.Vector3,
@@ -87,8 +85,7 @@ function cylinderBetween(
 
 // ── Couleur et épaisseur des cordes ──────────────────────────────────────────
 
-function stringColor(modelIndex: number, isActive: boolean): string {
-  if (isActive) return STRING_ACTIVE;
+function stringColor(modelIndex: number): string {
   const s = HARP_STRING_BY_MODEL[modelIndex];
   if (!s) return STRING_NATURAL;
   if (s.color === 'red') return STRING_C;
@@ -96,10 +93,17 @@ function stringColor(modelIndex: number, isActive: boolean): string {
   return STRING_NATURAL;
 }
 
-// Rayon décroissant du grave (épais) vers l'aigu (fin), comme sur une vraie harpe.
-// Valeurs suffisamment grandes pour être visibles à fov=75, camera z=20 (≈20 px/unité).
+// Rayon décroissant grave → aigu. Valeurs calibrées pour fov=75, camera z=20.
 function stringRadius(i: number): number {
-  return 0.065 - (i / (VISUAL_STRINGS - 1)) * 0.035; // 0.065 (basse) → 0.030 (aiguë)
+  return 0.065 - (i / (VISUAL_STRINGS - 1)) * 0.035;
+}
+
+// ── Matériau bois partagé (helper) ───────────────────────────────────────────
+
+function WoodMat({ color = WOOD_LIGHT }: { color?: string }) {
+  return (
+    <meshStandardMaterial color={color} roughness={0.68} metalness={0.03} />
+  );
 }
 
 // ── Composant React ───────────────────────────────────────────────────────────
@@ -115,7 +119,6 @@ const HarpStringModel: React.FC<HarpModelProps> = ({
   activeNoteIndices,
   onStringClick,
 }) => {
-  // Ensemble des indices visuels de cordes actives (0–35) — supporte les accords
   const activeVisualSet = useMemo(() => {
     const set = new Set<number>();
     for (const noteIdx of activeNoteIndices) {
@@ -131,17 +134,16 @@ const HarpStringModel: React.FC<HarpModelProps> = ({
     return set;
   }, [notes, activeNoteIndices]);
 
-  // Géométries mémoïsées (tube pilier et tube console)
+  // Tube radius plus large pour compenser l'aplatissement Z
   const pillarGeo = useMemo(
-    () => new THREE.TubeGeometry(PILLAR_CURVE, 56, 0.23, 10, false),
+    () => new THREE.TubeGeometry(PILLAR_CURVE, 60, 0.3, 12, false),
     [],
   );
   const neckGeo = useMemo(
-    () => new THREE.TubeGeometry(NECK_CURVE, 64, 0.18, 10, false),
+    () => new THREE.TubeGeometry(NECK_CURVE, 70, 0.26, 12, false),
     [],
   );
 
-  // Transformations des 36 cordes (indépendantes de l'état actif → mémoïsées)
   const strings = useMemo(
     () =>
       Array.from({ length: VISUAL_STRINGS }, (_, i) => ({
@@ -154,64 +156,56 @@ const HarpStringModel: React.FC<HarpModelProps> = ({
 
   const foxPos = NECK_CURVE.getPoint(1).toArray() as [number, number, number];
 
-  // Décalage du groupe : centrage de l'ensemble dans la vue.
-  // Emprise locale X [-1.9 … 4.6], Y [-5.7 … 7.9] → centre ≈ (1.35, 1.1)
   return (
-    <group position={[-1.3, -1.0, 0]}>
-      {/* Lumière chaude pour valoriser les teintes bois */}
-      <pointLight position={[4, 5, 6]} intensity={1.8} color='#FFC870' />
-
-      {/* ── Pilier ── */}
-      <mesh geometry={pillarGeo}>
-        <meshStandardMaterial
-          color={WOOD_LIGHT}
-          roughness={0.72}
-          metalness={0.03}
-        />
+    <group position={[-1.3, -1.1, 0]}>
+      {/* ── Pilier — planche plate légèrement courbée ── */}
+      {/*   scale Z = 0.22 → chant fin comme une vraie planche sculptée   */}
+      <mesh geometry={pillarGeo} scale={[1, 1, 0.22]}>
+        <WoodMat />
       </mesh>
 
-      {/* ── Console (cou) — arche prononcée ── */}
-      <mesh geometry={neckGeo}>
-        <meshStandardMaterial
-          color={WOOD_LIGHT}
-          roughness={0.72}
-          metalness={0.03}
-        />
+      {/* Pied de pilier — raccord arrondi avec le socle */}
+      <mesh position={[-1.5, -5.5, 0]} scale={[1.0, 0.7, 0.3]}>
+        <sphereGeometry args={[0.55, 16, 10]} />
+        <WoodMat />
       </mesh>
 
-      {/* ── Table d'harmonie — corps ── */}
-      <mesh position={[2.25, -0.2, 0]}>
-        <boxGeometry args={[0.95, 11.2, 0.54]} />
-        <meshStandardMaterial
-          color={WOOD_DARK}
-          roughness={0.82}
-          metalness={0.02}
-        />
+      {/* ── Console (cou) — planche plate en arche ── */}
+      {/*   scale Z = 0.20 → ruban plat, comme la vraie console en bois   */}
+      <mesh geometry={neckGeo} scale={[1, 1, 0.2]}>
+        <WoodMat />
       </mesh>
-      {/* Face avant (grain bois clair, plan des chevilles de table) */}
-      <mesh position={[2.25, -0.2, 0.29]}>
-        <boxGeometry args={[0.82, 10.9, 0.03]} />
-        <meshStandardMaterial
-          color={WOOD_LIGHT}
-          roughness={0.65}
-          metalness={0.02}
-        />
+
+      {/* ── Table d'harmonie ── */}
+      <mesh position={[2.25, -0.15, 0]}>
+        <boxGeometry args={[0.8, 11.0, 0.55]} />
+        <WoodMat color={WOOD_MID} />
+      </mesh>
+      {/* Renforts latéraux (lisières de la table) */}
+      <mesh position={[2.25, -0.15, 0.31]}>
+        <boxGeometry args={[0.72, 10.7, 0.06]} />
+        <WoodMat color={WOOD_LIGHT} />
+      </mesh>
+      <mesh position={[2.25, -0.15, -0.31]}>
+        <boxGeometry args={[0.72, 10.7, 0.06]} />
+        <WoodMat color={WOOD_LIGHT} />
       </mesh>
 
       {/* ── Socle ── */}
-      <mesh position={[0.4, -5.88, 0]}>
-        <boxGeometry args={[4.3, 0.34, 0.75]} />
-        <meshStandardMaterial
-          color={WOOD_DARK}
-          roughness={0.82}
-          metalness={0.02}
-        />
+      <mesh position={[0.45, -5.72, 0]}>
+        <boxGeometry args={[4.5, 0.38, 0.62]} />
+        <WoodMat color={WOOD_MID} />
+      </mesh>
+      {/* Congé pilier → socle */}
+      <mesh position={[-1.38, -5.55, 0]} rotation={[0, 0, 0.25]}>
+        <boxGeometry args={[0.55, 0.42, 0.5]} />
+        <WoodMat />
       </mesh>
 
       {/* ── 36 cordes ── */}
       {strings.map(({ position, quaternion, length, index, radius }) => {
         const isActive = activeVisualSet.has(index);
-        const baseColor = stringColor(index, false);
+        const baseColor = stringColor(index);
         return (
           <mesh
             key={index}
@@ -243,8 +237,8 @@ const HarpStringModel: React.FC<HarpModelProps> = ({
             <cylinderGeometry args={[radius, radius, length, 8]} />
             <meshStandardMaterial
               color={isActive ? STRING_ACTIVE : baseColor}
-              roughness={0.45}
-              metalness={0.5}
+              roughness={0.4}
+              metalness={0.55}
               emissive={isActive ? STRING_ACTIVE : baseColor}
               emissiveIntensity={isActive ? 0.7 : 0.15}
             />
@@ -252,126 +246,96 @@ const HarpStringModel: React.FC<HarpModelProps> = ({
         );
       })}
 
-      {/* ── Chevilles d'accordage ── */}
+      {/* ── Chevilles d'accordage — laiton doré ── */}
       {Array.from({ length: VISUAL_STRINGS }, (_, i) => {
         const pt = neckPoint(i);
         return (
           <mesh
             key={`pin-${i}`}
-            position={[pt.x, pt.y, pt.z + 0.26]}
+            position={[pt.x, pt.y, pt.z + 0.24]}
             rotation={[Math.PI / 2, 0, 0]}
           >
-            <cylinderGeometry args={[0.038, 0.038, 0.16, 6]} />
+            <cylinderGeometry args={[0.042, 0.042, 0.18, 8]} />
             <meshStandardMaterial
               color={PIN_COLOR}
-              roughness={0.22}
-              metalness={0.92}
+              roughness={0.18}
+              metalness={0.95}
             />
           </mesh>
         );
       })}
 
-      {/* ── Tête de renard (bout de la console) ── */}
+      {/* ── Tête de renard ── */}
       {/*
-       * Orientation : rotation [0.15, 0, -0.32] — le renard regarde légèrement
-       * vers les cordes (vers la gauche) et légèrement vers le spectateur.
-       * Le museau (cylindre tronconique) pointe dans la direction −X du groupe du renard.
+       * Repère local du groupe renard (Z-rotation −0.28 sur le groupe parent) :
+       *   X- = direction du museau (vers les cordes / joueur)
+       *   Y+ = vers le haut (oreilles)
+       *   Z± = côtés (yeux)
+       *
+       * Résultat en repère monde :
+       *   museau pointe vers la gauche et légèrement vers le bas ✓
+       *   oreilles pointent vers le haut et légèrement vers la droite ✓
        */}
-      <group position={foxPos} rotation={[0.15, 0, -0.32]}>
-        {/* Crâne */}
-        <mesh>
-          <sphereGeometry args={[0.52, 18, 14]} />
-          <meshStandardMaterial
-            color={WOOD_LIGHT}
-            roughness={0.72}
-            metalness={0.03}
-          />
+      <group position={foxPos} rotation={[0.12, 0, -0.28]}>
+        {/* Crâne — ellipsoïde allongé vers le museau (-X) */}
+        <mesh scale={[1.55, 1.0, 0.7]}>
+          <sphereGeometry args={[0.4, 22, 16]} />
+          <WoodMat />
         </mesh>
 
-        {/* Museau allongé (cône tronqué, base large côté crâne) */}
-        <mesh position={[-0.62, -0.14, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[0.13, 0.24, 0.72, 12]} />
-          <meshStandardMaterial
-            color={WOOD_LIGHT}
-            roughness={0.72}
-            metalness={0.03}
-          />
+        {/* Museau — long cône tronqué, incliné légèrement vers le bas */}
+        {/* rotation Z = π/2 aligne l'axe Y du cylindre sur X ; -0.20 rad incline vers le bas */}
+        <mesh position={[-0.82, -0.16, 0]} rotation={[0, 0, Math.PI / 2 - 0.2]}>
+          <cylinderGeometry args={[0.068, 0.21, 1.15, 14]} />
+          <WoodMat />
         </mesh>
 
-        {/* Bout du nez */}
-        <mesh position={[-0.99, -0.14, 0]}>
-          <sphereGeometry args={[0.12, 10, 8]} />
+        {/* Bout du museau — sphère sombre */}
+        <mesh position={[-1.42, -0.36, 0]}>
+          <sphereGeometry args={[0.085, 12, 10]} />
+          <WoodMat color={WOOD_DARK} />
+        </mesh>
+
+        {/* Oreille gauche (Z+) — haute et pointue */}
+        <mesh position={[0.18, 0.62, 0.21]} rotation={[0.08, 0, 0.06]}>
+          <coneGeometry args={[0.105, 0.95, 9]} />
+          <WoodMat />
+        </mesh>
+
+        {/* Oreille droite (Z-) */}
+        <mesh position={[0.18, 0.62, -0.21]} rotation={[-0.08, 0, 0.06]}>
+          <coneGeometry args={[0.105, 0.95, 9]} />
+          <WoodMat />
+        </mesh>
+
+        {/* Oeil côté Z+ — almond sombre */}
+        <mesh position={[-0.2, 0.15, 0.32]}>
+          <sphereGeometry args={[0.058, 12, 10]} />
           <meshStandardMaterial
             color={WOOD_DARK}
-            roughness={0.55}
-            metalness={0.04}
+            roughness={0.22}
+            metalness={0.12}
           />
         </mesh>
 
-        {/* Oreille gauche — grande, pointue */}
-        <mesh position={[0.14, 0.58, 0.24]} rotation={[0.2, 0, 0.12]}>
-          <coneGeometry args={[0.13, 0.62, 8]} />
-          <meshStandardMaterial
-            color={WOOD_LIGHT}
-            roughness={0.72}
-            metalness={0.03}
-          />
-        </mesh>
-
-        {/* Oreille droite */}
-        <mesh position={[0.14, 0.58, -0.24]} rotation={[-0.2, 0, 0.12]}>
-          <coneGeometry args={[0.13, 0.62, 8]} />
-          <meshStandardMaterial
-            color={WOOD_LIGHT}
-            roughness={0.72}
-            metalness={0.03}
-          />
-        </mesh>
-
-        {/* Yeux gravés */}
-        <mesh position={[-0.26, 0.1, 0.32]}>
-          <sphereGeometry args={[0.065, 8, 8]} />
+        {/* Oeil côté Z- */}
+        <mesh position={[-0.2, 0.15, -0.32]}>
+          <sphereGeometry args={[0.058, 12, 10]} />
           <meshStandardMaterial
             color={WOOD_DARK}
-            roughness={0.35}
-            metalness={0.0}
-          />
-        </mesh>
-        <mesh position={[-0.26, 0.1, -0.32]}>
-          <sphereGeometry args={[0.065, 8, 8]} />
-          <meshStandardMaterial
-            color={WOOD_DARK}
-            roughness={0.35}
-            metalness={0.0}
+            roughness={0.22}
+            metalness={0.12}
           />
         </mesh>
 
-        {/* Pattes avant repliées sous le menton */}
-        <mesh position={[-0.52, -0.46, 0.18]} rotation={[0.38, 0, -0.62]}>
-          <capsuleGeometry args={[0.085, 0.28, 4, 8]} />
-          <meshStandardMaterial
-            color={WOOD_LIGHT}
-            roughness={0.72}
-            metalness={0.03}
-          />
-        </mesh>
-        <mesh position={[-0.52, -0.46, -0.18]} rotation={[-0.38, 0, -0.62]}>
-          <capsuleGeometry args={[0.085, 0.28, 4, 8]} />
-          <meshStandardMaterial
-            color={WOOD_LIGHT}
-            roughness={0.72}
-            metalness={0.03}
-          />
-        </mesh>
-
-        {/* Fourrure de gorge — sphère aplatie sous le menton */}
-        <mesh position={[-0.3, -0.38, 0]} scale={[0.6, 0.35, 0.9]}>
-          <sphereGeometry args={[0.38, 10, 8]} />
-          <meshStandardMaterial
-            color={WOOD_LIGHT}
-            roughness={0.85}
-            metalness={0.0}
-          />
+        {/* Connexion nuque → console (raccord organique) */}
+        <mesh
+          position={[0.52, -0.22, 0]}
+          rotation={[0, 0, 0.55]}
+          scale={[1, 1, 0.55]}
+        >
+          <cylinderGeometry args={[0.24, 0.3, 0.65, 12]} />
+          <WoodMat />
         </mesh>
       </group>
     </group>
