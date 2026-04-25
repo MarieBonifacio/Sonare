@@ -8,11 +8,11 @@ import { HARP_STRING_BY_MODEL } from '../utils/harpTuning';
 
 const WOOD_LIGHT = '#C5893C'; // chêne/cerisier clair
 const WOOD_DARK = '#8A5828'; // corps/table foncé
-const STRING_C = '#CC3333'; // cordes Do — rouge (repère harpiste)
-const STRING_F = '#1A1A2A'; // cordes Fa — noir/bleu foncé (repère harpiste)
-const STRING_NATURAL = '#C8C8C8'; // cordes diatoniques ordinaires
+const STRING_C = '#E03030'; // cordes Do — rouge vif (repère harpiste)
+const STRING_F = '#3A3AB0'; // cordes Fa — bleu nuit visible sur fond sombre
+const STRING_NATURAL = '#D8CFA8'; // cordes diatoniques — ivoire chaud
 const STRING_ACTIVE = '#FFE45A'; // corde en cours de jeu
-const PIN_COLOR = '#A8A8A8'; // chevilles métalliques
+const PIN_COLOR = '#B8B8B8'; // chevilles métalliques
 
 // ── Géométrie structurelle ────────────────────────────────────────────────────
 //
@@ -97,8 +97,9 @@ function stringColor(modelIndex: number, isActive: boolean): string {
 }
 
 // Rayon décroissant du grave (épais) vers l'aigu (fin), comme sur une vraie harpe.
+// Valeurs suffisamment grandes pour être visibles à fov=75, camera z=20 (≈20 px/unité).
 function stringRadius(i: number): number {
-  return 0.026 - (i / (VISUAL_STRINGS - 1)) * 0.014; // 0.026 (basse) → 0.012 (aiguë)
+  return 0.065 - (i / (VISUAL_STRINGS - 1)) * 0.035; // 0.065 (basse) → 0.030 (aiguë)
 }
 
 // ── Composant React ───────────────────────────────────────────────────────────
@@ -106,11 +107,13 @@ function stringRadius(i: number): number {
 interface HarpModelProps {
   notes: Note[];
   activeNoteIndices: number[];
+  onStringClick?: (stringIndex: number) => void;
 }
 
 const HarpStringModel: React.FC<HarpModelProps> = ({
   notes,
   activeNoteIndices,
+  onStringClick,
 }) => {
   // Ensemble des indices visuels de cordes actives (0–35) — supporte les accords
   const activeVisualSet = useMemo(() => {
@@ -206,18 +209,48 @@ const HarpStringModel: React.FC<HarpModelProps> = ({
       </mesh>
 
       {/* ── 36 cordes ── */}
-      {strings.map(({ position, quaternion, length, index, radius }) => (
-        <mesh key={index} position={position} quaternion={quaternion}>
-          <cylinderGeometry args={[radius, radius, length, 5]} />
-          <meshStandardMaterial
-            color={stringColor(index, activeVisualSet.has(index))}
-            roughness={0.12}
-            metalness={0.88}
-            emissive={activeVisualSet.has(index) ? STRING_ACTIVE : '#000000'}
-            emissiveIntensity={activeVisualSet.has(index) ? 0.6 : 0}
-          />
-        </mesh>
-      ))}
+      {strings.map(({ position, quaternion, length, index, radius }) => {
+        const isActive = activeVisualSet.has(index);
+        const baseColor = stringColor(index, false);
+        return (
+          <mesh
+            key={index}
+            position={position}
+            quaternion={quaternion}
+            onClick={
+              onStringClick
+                ? (e) => {
+                    e.stopPropagation();
+                    onStringClick(index);
+                  }
+                : undefined
+            }
+            onPointerOver={
+              onStringClick
+                ? () => {
+                    document.body.style.cursor = 'pointer';
+                  }
+                : undefined
+            }
+            onPointerOut={
+              onStringClick
+                ? () => {
+                    document.body.style.cursor = 'default';
+                  }
+                : undefined
+            }
+          >
+            <cylinderGeometry args={[radius, radius, length, 8]} />
+            <meshStandardMaterial
+              color={isActive ? STRING_ACTIVE : baseColor}
+              roughness={0.45}
+              metalness={0.5}
+              emissive={isActive ? STRING_ACTIVE : baseColor}
+              emissiveIntensity={isActive ? 0.7 : 0.15}
+            />
+          </mesh>
+        );
+      })}
 
       {/* ── Chevilles d'accordage ── */}
       {Array.from({ length: VISUAL_STRINGS }, (_, i) => {

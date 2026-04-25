@@ -24,6 +24,7 @@ import ExercisePanel from './components/ExercisePanel';
 import LlmPanel from './components/LlmPanel';
 import { GeneratedExercise } from './utils/exerciseGenerator';
 import { Lang, STEP_FR, T } from './utils/i18n';
+import { HARP_STRING_BY_MODEL } from './utils/harpTuning';
 
 const HARP_BASE_URL =
   'https://gleitz.github.io/midi-js-soundfonts/MusyngKite/orchestral_harp-mp3/';
@@ -330,6 +331,14 @@ function App() {
     });
   }, []);
 
+  // Clic sur une corde de la harpe 3D → joue la note correspondante directement
+  const handleStringClick = useCallback(async (stringIndex: number) => {
+    const s = HARP_STRING_BY_MODEL[stringIndex];
+    if (!s) return;
+    const synth = await getSynth();
+    synth.triggerAttackRelease(`${s.step}${s.octave}`, '2n', 0.8);
+  }, []);
+
   const handleScoreLoad = (
     loadedNotes: Note[],
     loadedDivisions: number,
@@ -593,11 +602,19 @@ function App() {
             </button>
           )}
           <Canvas camera={{ position: [0, 0, 20], fov: 75 }}>
-            <ambientLight intensity={0.5} />
-            <directionalLight position={[10, 10, 5]} intensity={1} />
-            <pointLight position={[10, 10, 10]} />
+            <ambientLight intensity={0.9} />
+            <directionalLight position={[8, 10, 6]} intensity={1.2} />
+            <directionalLight
+              position={[-4, 2, 8]}
+              intensity={0.6}
+              color='#BBBBFF'
+            />
             <Suspense fallback={null}>
-              <HarpModel notes={notes} activeNoteIndices={activeNoteIndices} />
+              <HarpModel
+                notes={notes}
+                activeNoteIndices={activeNoteIndices}
+                onStringClick={handleStringClick}
+              />
             </Suspense>
             <OrbitControls />
           </Canvas>
